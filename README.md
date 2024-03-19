@@ -1,1 +1,1 @@
-# -6-10000-Generate_image_detection
+# Generate_image_detection
