@@ -1,0 +1,8 @@
+numpy==1.24.4
+torch==1.13.1+cu117
+torchattacks==3.5.1
+torchvision==0.14.1+cu117
+tqdm==4.66.2
+scipy>=0.14.0
+requests>=2.25.1
+pandas>=1.2.4
