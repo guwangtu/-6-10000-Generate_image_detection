@@ -50,15 +50,13 @@ def evaluate(model, test_loader, criterion,adv_test=False,atk = None):
     model.eval()
     corrects = eval_loss = 0
     test_sum = 0
-    with torch.no_grad():
-        for image, label in tqdm(test_loader):
-            image = image.to(device)
-            label = label.to(device)
-            if adv_test:
-                adv_image = atk(image, label)
-                pred = model(adv_image)
-            else:
-                pred = model(image)
+    for image, label in tqdm(test_loader):
+        image = image.to(device)
+        label = label.to(device)
+        if adv_test:
+            image = atk(image, label)
+        with torch.no_grad():
+            pred = model(image)
             loss = criterion(pred, label)
             eval_loss += loss.item()
             max_value, max_index = torch.max(pred, 1)
