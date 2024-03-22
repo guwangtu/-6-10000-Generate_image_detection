@@ -96,7 +96,7 @@ if __name__ == "__main__":
         ]
     )
 
-    dataset_path = "dataset3"
+    dataset_path = "face_dataset"
     train_path = dataset_path + "/train"
     val_path = dataset_path + "/test"
     train_data = datasets.ImageFolder(train_path, transform=train_transform)
