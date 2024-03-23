@@ -16,7 +16,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-device = "cuda:0"
+device = "cuda:1"
 
 
 def train(model, train_loader, optimizer, criterion, adv_train = False, atk = None):
@@ -29,11 +29,9 @@ def train(model, train_loader, optimizer, criterion, adv_train = False, atk = No
         label = label.to(device)
         optimizer.zero_grad()
 
-        if adv_train:
-            adv_image = atk(image, label)
-            target = model(adv_image)
-        else:
-            target = model(image)
+        adv_image = atk(image, label)
+        target = model(adv_image)
+        
         loss = criterion(target, label)
         loss.backward()
         optimizer.step()
@@ -43,6 +41,20 @@ def train(model, train_loader, optimizer, criterion, adv_train = False, atk = No
         true_label = label.cpu().numpy()
         train_corrects += np.sum(pred_label == true_label)
         train_sum += pred_label.shape[0]
+
+        optimizer.zero_grad()
+        target = model(image)
+        loss = criterion(target, label)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+        max_value, max_index = torch.max(target, 1)
+        pred_label = max_index.cpu().numpy()
+        true_label = label.cpu().numpy()
+        train_corrects += np.sum(pred_label == true_label)
+        train_sum += pred_label.shape[0]
+
+
     return total_loss / float(len(train_loader)), train_corrects / train_sum
 
 
