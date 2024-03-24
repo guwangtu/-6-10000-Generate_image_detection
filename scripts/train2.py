@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     batch_size = 64
     learning_rate = 5e-5
-    epoches = 10
+    epoches = 30
 
     # 数据增强
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
             + "  train_acc:"
             + str(train_acc)
         )
-        if epoch % 1 == 0:
+        if epoch % 5 == 0:
             test_loss, d, test_acc = evaluate(model, val_loader, criterion)
             print(
                 "epoch"
@@ -157,6 +157,6 @@ if __name__ == "__main__":
                 + "  adv_val_acc:"
                 + str(test_acc)
             )
-            #torch.save(model.state_dict(), "epoch" + str(epoch + 1) + ".pt")
+            torch.save(model.state_dict(), "train2_epoch" + str(epoch + 1) + ".pt")
     torch.save(model.state_dict(), "train2_epoch" + str(epoches) + ".pt")
     print("finish")
