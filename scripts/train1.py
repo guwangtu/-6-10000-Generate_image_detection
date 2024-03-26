@@ -19,7 +19,7 @@ from tqdm import tqdm
 device = "cuda:0"
 
 
-def train(model, train_loader, optimizer, criterion, adv_train = False, atk = None):
+def train(model, train_loader, optimizer, criterion, adv_train=False, atk=None):
     model.train()
     total_loss = 0
     train_corrects = 0
@@ -46,7 +46,7 @@ def train(model, train_loader, optimizer, criterion, adv_train = False, atk = No
     return total_loss / float(len(train_loader)), train_corrects / train_sum
 
 
-def evaluate(model, test_loader, criterion,adv_test=False,atk = None):
+def evaluate(model, test_loader, criterion, adv_test=False, atk=None):
     model.eval()
     corrects = eval_loss = 0
     test_sum = 0
@@ -106,18 +106,20 @@ if __name__ == "__main__":
 
     model = models.resnet50(pretrained=True)
     model.fc = torch.nn.Linear(2048, 2)
-    #m_state_dict = torch.load("d4/epoch16.pt")
-    #model.load_state_dict(m_state_dict)
+    # m_state_dict = torch.load("d4/epoch16.pt")
+    # model.load_state_dict(m_state_dict)
     model = model.to(device)
 
     atk = PGD(model, eps=8 / 255, alpha=2 / 225, steps=10, random_start=True)
     atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
- 
+
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
     for epoch in range(epoches):
-        train_loss, train_acc = train(model, train_loader, optimizer, criterion, adv_train=True,atk = atk)
+        train_loss, train_acc = train(
+            model, train_loader, optimizer, criterion, adv_train=True, atk=atk
+        )
         print(
             "epoch"
             + str(epoch + 1)
@@ -136,7 +138,9 @@ if __name__ == "__main__":
                 + "  val_acc:"
                 + str(test_acc)
             )
-            test_loss, d, test_acc = evaluate(model, val_loader, criterion, adv_test=True,atk = atk)
+            test_loss, d, test_acc = evaluate(
+                model, val_loader, criterion, adv_test=True, atk=atk
+            )
             print(
                 "epoch"
                 + str(epoch + 1)
