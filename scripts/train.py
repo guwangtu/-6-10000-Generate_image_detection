@@ -104,7 +104,6 @@ class Trainer:
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0]
-            break
 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
