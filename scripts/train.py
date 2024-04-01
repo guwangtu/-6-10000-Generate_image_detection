@@ -36,6 +36,8 @@ class Trainer:
             save_path = os.path.join(save_path, "1")
         else:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
+        
+        os.mkdir(save_path)
 
         for epoch in range(args.load_epoch, args.epoches):
             train_loss, train_acc = self.train_step(
@@ -172,6 +174,8 @@ def main(args):
         train_path = dataset_path + "/train"
         val_path = dataset_path + "/test"
         save_path = args.save_path
+        if not os.path.isdir("checkpoint"):
+            os.mkdir("checkpoint")
         if not os.path.isdir(save_path):
             os.mkdir(save_path)
 
