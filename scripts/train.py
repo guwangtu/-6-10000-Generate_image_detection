@@ -30,13 +30,13 @@ class Trainer:
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
 
-        save_path = args.save_path
+        save_path = "checkpoint/" + args.save_path
         int_files = [int(file) for file in os.listdir(save_path)]
         if len(int_files) == 0:
             save_path = os.path.join(save_path, "1")
         else:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
-        
+
         os.mkdir(save_path)
 
         for epoch in range(args.load_epoch, args.epoches):
@@ -214,7 +214,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    
+
     args = parser()
 
     main(args)
