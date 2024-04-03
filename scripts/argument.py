@@ -13,7 +13,7 @@ def parser():
     parser.add_argument("--dataset2", default=None)
     parser.add_argument("--epoches", type=int, default=10)
     parser.add_argument("--save_each_epoch", type=int, default=5)
-    parser.add_argument("--save_path", default="checkpoint/face1")
+    parser.add_argument("--save_path", default="face1")
     parser.add_argument("--lr", default=5e-5)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--load_path", default=None)

@@ -172,7 +172,7 @@ def main(args):
         dataset_path = args.dataset
         train_path = dataset_path + "/train"
         val_path = dataset_path + "/test"
-        save_path = args.save_path
+        save_path = "checkpoint/" + args.save_path
         if not os.path.isdir("checkpoint"):
             os.mkdir("checkpoint")
         if not os.path.isdir(save_path):
