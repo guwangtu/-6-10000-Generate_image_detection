@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.utils.data as data
+import torchvision
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
@@ -12,6 +13,7 @@ import torchattacks
 from torchattacks import PGD
 
 import numpy as np
+import cv2
 
 from tqdm import tqdm
 
@@ -69,7 +71,7 @@ class Trainer:
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
-        self.evaluate(model, val_loader, criterion, adv_test=True, atk=atk)
+        self.evaluate(model, val_loader, adv_test=True, atk=atk)
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
@@ -107,7 +109,8 @@ class Trainer:
 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(self, model, val_loader, criterion, adv_test=False, atk=None):
+    def evaluate(self, model, val_loader, adv_test=False, atk=None):
+        criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
         if adv_test:
@@ -140,20 +143,42 @@ class Trainer:
                 )
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
 
+    def get_adv_imgs(self, data_loader, atk):
+        device = self.device
+        args = self.args
+        save_path = "DIRE/" + args.save_path
+        i = 0
+        j = 0
+        for image, label in tqdm(data_loader):
+            image = image.to(device)
+            label = label.to(device)
+            imgs = atk(image, label)
+
+            for t in range(len(label)):
+                this_label = label[t].cpu().numpy().astype(np.uint8)
+                os.makedirs(f"{save_path}/{str(this_label)}", exist_ok=True)
+                if this_label == 0:
+                    i += 1
+                    k = i
+                else:
+                    j += 1
+                    k = j
+                torchvision.utils.save_image(
+                    imgs[t], f"{save_path}/{str(this_label)}/{str(k)}.png"
+                )
+
 
 def main(args):
-
-    model = models.resnet50(pretrained=True)
-    model.fc = torch.nn.Linear(2048, 2)
 
     batch_size = args.batch_size
     device = "cuda:" + str(args.device)
 
+    model = models.resnet50(pretrained=True)
+    model.fc = torch.nn.Linear(2048, 2)
     if args.load_path:
         load_path = args.load_path
         m_state_dict = torch.load(load_path)
         model.load_state_dict(m_state_dict)
-
     model = model.to(device)
 
     atk = PGD(
@@ -201,16 +226,40 @@ def main(args):
         val_data = datasets.ImageFolder(val_path, transform=val_transform)
         val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
-        trainer.train(model, train_loader, val_loader, args.adv_train)
+        trainer.train(model, train_loader, val_loader, args.adv)
 
     elif args.todo == "test":
 
-        dataset_path = args.dataset
-        val_path = dataset_path + "/test"
+        val_path = args.dataset
+
+        val_transform = transforms.Compose(
+            [
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+
         val_data = datasets.ImageFolder(val_path, transform=val_transform)
         val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
-        trainer.evaluate()
+        trainer.evaluate(model, val_loader, adv_test=args.adv, atk=atk)
+
+    elif args.todo == "get_adv_imgs":
+
+        dataset_path = args.dataset
+        save_path = "DIRE/" + args.save_path
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
+        transform = transforms.Compose(
+            [
+                transforms.Resize([256, 256]),
+                transforms.ToTensor(),
+            ]
+        )
+        imgdata = datasets.ImageFolder(dataset_path, transform=transform)
+        data_loader = data.DataLoader(imgdata, batch_size=batch_size, shuffle=True)
+
+        trainer.get_adv_imgs(data_loader, atk=atk)
 
 
 if __name__ == "__main__":

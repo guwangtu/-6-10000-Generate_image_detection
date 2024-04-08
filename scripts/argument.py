@@ -5,7 +5,10 @@ def parser():
     parser = argparse.ArgumentParser(description="attack")
 
     parser.add_argument(
-        "--todo", choices=["train", "test"], default="train", help="train|test"
+        "--todo",
+        choices=["train", "test", "get_adv_imgs"],
+        default="train",
+        help="train|test|get_adv_imgs",
     )
     parser.add_argument("--device", default="0", type=str, help="0123")
 
@@ -19,7 +22,7 @@ def parser():
     parser.add_argument("--load_path", default=None)
     parser.add_argument("--load_epoch", type=int, default=0)
 
-    parser.add_argument("--adv_train", type=bool, default=False)
+    parser.add_argument("--adv", default=False, action="store_true")
     parser.add_argument("--atk_eps", default=8 / 255)
     parser.add_argument("--atk_alpha", default=2 / 225)
     parser.add_argument("--atk_steps", type=int, default=10)

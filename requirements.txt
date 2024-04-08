@@ -6,3 +6,6 @@ tqdm==4.66.2
 scipy>=0.14.0
 requests>=2.25.1
 pandas>=1.2.4
+mpi4py
+opencv-python
+blobfile
