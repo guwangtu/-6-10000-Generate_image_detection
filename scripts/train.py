@@ -177,7 +177,7 @@ def main(args):
     model.fc = torch.nn.Linear(2048, 2)
     if args.load_path:
         load_path = args.load_path
-        m_state_dict = torch.load(load_path)
+        m_state_dict = torch.load(load_path,map_location='cuda')
         model.load_state_dict(m_state_dict)
     model = model.to(device)
 
