@@ -67,7 +67,7 @@ class Trainer:
                 )
 
             if (epoch + 1) % args.save_each_epoch == 0:
-                self.evaluate(model, val_loader, criterion, adv_test=True, atk=atk)
+                self.evaluate(model, val_loader, adv_test=True, atk=atk)
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
