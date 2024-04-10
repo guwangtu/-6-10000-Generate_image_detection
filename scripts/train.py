@@ -26,7 +26,7 @@ class Trainer:
         self.atk = atk
         self.device = "cuda:" + args.device
 
-    def train(self, model, train_loader, val_loader, adv_train=False):
+    def train(self, model, train_loader, val_loader, adv_train=False,train_loader2=None,val_loader2=None):
         args = self.args
         atk = self.atk
         criterion = torch.nn.CrossEntropyLoss()
@@ -43,7 +43,7 @@ class Trainer:
 
         for epoch in range(args.load_epoch, args.epoches):
             train_loss, train_acc = self.train_step(
-                model, train_loader, optimizer, criterion
+                model, train_loader, optimizer, criterion,adv_train=False,train_loader2=train_loader2
             )
             print(
                 "epoch"
@@ -55,7 +55,7 @@ class Trainer:
             )
             if adv_train:
                 train_loss, train_acc = self.train_step(
-                    model, train_loader, optimizer, criterion, adv_train=True
+                    model, train_loader, optimizer, criterion, adv_train=True,train_loader2=train_loader2
                 )
                 print(
                     "epoch"
@@ -67,16 +67,16 @@ class Trainer:
                 )
 
             if (epoch + 1) % args.save_each_epoch == 0:
-                self.evaluate(model, val_loader, adv_test=True, atk=atk)
+                self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
-        self.evaluate(model, val_loader, adv_test=True, atk=atk)
+        self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
 
-    def train_step(self, model, train_loader, optimizer, criterion, adv_train=False):
+    def train_step(self, model, train_loader, optimizer, criterion, adv_train=False,train_loader2=None):
         args = self.args
         atk = self.atk
         device = self.device
@@ -87,6 +87,8 @@ class Trainer:
         train_corrects = 0
         train_sum = 0
 
+        if train_loader2:
+            dataloader_iterator = iter(train_loader2)
         for i, (image, label) in enumerate(tqdm(train_loader)):
             image = image.to(device)
             label = label.to(device)
@@ -106,10 +108,34 @@ class Trainer:
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0]
+            if train_loader2:
+                try:
+                    image, label = next(dataloader_iterator)
+                except StopIteration:
+                    dataloader_iterator = iter(train_loader2)
+                    image, label = next(dataloader_iterator)
+                image = image.to(device)
+                label = label.to(device)
+                optimizer.zero_grad()    
+                if adv_train:
+                    adv_image = atk(image, label)
+                    target = model(adv_image)
+                else:
+                    target = model(image)
+                loss = criterion(target, label)
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+                max_value, max_index = torch.max(target, 1)
+                pred_label = max_index.cpu().numpy()
+                true_label = label.cpu().numpy()
+                train_corrects += np.sum(pred_label == true_label)
+                train_sum += pred_label.shape[0]
+
 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(self, model, val_loader, adv_test=False, atk=None):
+    def evaluate(self, model, val_loader, adv_test=False, atk=None,val_loader2=None):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
@@ -118,6 +144,11 @@ class Trainer:
                 model, val_loader, criterion, adv_test=True, atk=atk
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
+        if val_loader2:
+            test_loss, d, test_acc = self.evaluate_step(
+                model, val_loader2, criterion, adv_test=True, atk=atk
+            )
+            print("another_val_loss:" + str(test_loss) + "  another_val_acc:" + str(test_acc))           
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False, atk=None):
         device = self.device
@@ -226,7 +257,19 @@ def main(args):
         val_data = datasets.ImageFolder(val_path, transform=val_transform)
         val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
-        trainer.train(model, train_loader, val_loader, args.adv)
+        if args.train_dataset2:
+            train_path2 = args.train_dataset2
+            train_data2 = datasets.ImageFolder(train_path2, transform=train_transform)
+            train_loader2 = data.DataLoader(train_data2, batch_size=batch_size, shuffle=True)
+        else:
+            train_loader2=None
+        if args.val_dataset2:
+            val_path2 = args.val_dataset2
+            val_data2 = datasets.ImageFolder(val_path2, transform=val_transform)
+            val_loader2 = data.DataLoader(val_data2, batch_size=batch_size, shuffle=True)
+        else:
+            val_loader2=None
+        trainer.train(model, train_loader, val_loader, args.adv,train_loader2,val_loader2)
 
     elif args.todo == "test":
 
@@ -247,7 +290,7 @@ def main(args):
     elif args.todo == "get_adv_imgs":
 
         dataset_path = args.dataset
-        save_path = "DIRE/" + args.save_path
+        save_path = args.save_path
         if not os.path.isdir(save_path):
             os.mkdir(save_path)
         transform = transforms.Compose(
