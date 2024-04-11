@@ -111,6 +111,7 @@ class Trainer:
             if train_loader2:
                 try:
                     image, label = next(dataloader_iterator)
+                    print("get")
                 except StopIteration:
                     dataloader_iterator = iter(train_loader2)
                     image, label = next(dataloader_iterator)
