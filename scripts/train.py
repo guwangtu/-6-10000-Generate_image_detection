@@ -223,6 +223,11 @@ def main(args):
 
     trainer = Trainer(args, atk)
 
+    if args.adv:
+        print("adv:True")
+    else:
+        print("adv:False")
+
     if args.todo == "train":
 
         dataset_path = args.dataset
