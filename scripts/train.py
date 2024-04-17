@@ -99,7 +99,32 @@ class Trainer:
                 target = model(adv_image)
             else:
                 target = model(image)
-            loss = criterion(target, label)
+            loss = criterion(target, label)  
+            max_value, max_index = torch.max(target, 1)
+            pred_label = max_index.cpu().numpy()
+            true_label = label.cpu().numpy()
+            train_corrects += np.sum(pred_label == true_label)
+            train_sum += pred_label.shape[0]
+            if train_loader2:
+                try:
+                    image, label = next(dataloader_iterator) 
+                except StopIteration:
+                    dataloader_iterator = iter(train_loader2)
+                    image, label = next(dataloader_iterator)
+                image = image.to(device)
+                label = label.to(device) 
+                if adv_train:
+                    adv_image = atk(image, label)
+                    target = model(adv_image)
+                else:
+                    target = model(image)
+                loss2 = criterion(target, label)
+                loss=loss+loss2
+                max_value, max_index = torch.max(target, 1)
+                pred_label = max_index.cpu().numpy()
+                true_label = label.cpu().numpy()
+                train_corrects += np.sum(pred_label == true_label)
+                train_sum += pred_label.shape[0]
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -108,30 +133,6 @@ class Trainer:
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0]
-            if train_loader2:
-                try:
-                    image, label = next(dataloader_iterator)
-                    print("get")
-                except StopIteration:
-                    dataloader_iterator = iter(train_loader2)
-                    image, label = next(dataloader_iterator)
-                image = image.to(device)
-                label = label.to(device)
-                optimizer.zero_grad()    
-                if adv_train:
-                    adv_image = atk(image, label)
-                    target = model(adv_image)
-                else:
-                    target = model(image)
-                loss = criterion(target, label)
-                loss.backward()
-                optimizer.step()
-                total_loss += loss.item()
-                max_value, max_index = torch.max(target, 1)
-                pred_label = max_index.cpu().numpy()
-                true_label = label.cpu().numpy()
-                train_corrects += np.sum(pred_label == true_label)
-                train_sum += pred_label.shape[0]
 
 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
