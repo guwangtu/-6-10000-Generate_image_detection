@@ -148,7 +148,7 @@ class Trainer:
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
-                model, val_loader2, criterion, adv_test=True, atk=atk
+                model, val_loader2, criterion, adv_test=False, atk=atk
             )
             print("another_val_loss:" + str(test_loss) + "  another_val_acc:" + str(test_acc))           
 
