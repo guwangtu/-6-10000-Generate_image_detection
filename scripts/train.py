@@ -40,7 +40,7 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-
+        self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
         for epoch in range(args.load_epoch, args.epoches):
             train_loss, train_acc = self.train_step(
                 model, train_loader, optimizer, criterion,adv_train=False,train_loader2=train_loader2
@@ -265,12 +265,14 @@ def main(args):
         val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
         if args.train_dataset2:
+            print("using train_dataset2")
             train_path2 = args.train_dataset2
             train_data2 = datasets.ImageFolder(train_path2, transform=train_transform)
             train_loader2 = data.DataLoader(train_data2, batch_size=batch_size, shuffle=True)
         else:
             train_loader2=None
         if args.val_dataset2:
+            print("using val_dataset2")
             val_path2 = args.val_dataset2
             val_data2 = datasets.ImageFolder(val_path2, transform=val_transform)
             val_loader2 = data.DataLoader(val_data2, batch_size=batch_size, shuffle=True)
