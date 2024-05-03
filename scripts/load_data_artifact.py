@@ -47,7 +47,7 @@ def load_artifact(path,transform,validation_split = 0.2):
         train_datasets.append(this_train_dataset)
         val_datasets.append(this_val_dataset) 
 
-    train_dataset=ConcatDataset(train_dataset)
+    train_dataset=ConcatDataset(train_datasets)
     val_dataset= ConcatDataset(val_datasets)
 
     print("load Artifact successfully")
