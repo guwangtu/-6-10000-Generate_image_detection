@@ -40,7 +40,7 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
+        self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
         for epoch in range(args.load_epoch, args.epoches):
             train_loss, train_acc = self.train_step(
                 model, train_loader, optimizer, criterion,adv_train=False,train_loader2=train_loader2
@@ -67,11 +67,11 @@ class Trainer:
                 )
 
             if (epoch + 1) % args.save_each_epoch == 0:
-                self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
+                self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
-        self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
+        self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )

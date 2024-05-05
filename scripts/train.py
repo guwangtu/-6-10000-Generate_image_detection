@@ -40,7 +40,7 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
+        self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
         for epoch in range(args.load_epoch, args.epoches):
             train_loss, train_acc = self.train_step(
                 model, train_loader, optimizer, criterion,adv_train=False,train_loader2=train_loader2
@@ -67,11 +67,11 @@ class Trainer:
                 )
 
             if (epoch + 1) % args.save_each_epoch == 0:
-                self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
+                self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
-        self.evaluate(model, val_loader, adv_test=True, atk=atk,val_loader2=val_loader2)
+        self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
@@ -200,20 +200,44 @@ class Trainer:
                     imgs[t], f"{save_path}/{str(this_label)}/{str(k)}.png"
                 )
 
+class ViT(nn.Module):
+    def __init__(self, num_classes=1, pretrained=True):
+        super(ViT, self).__init__()
+        self.vit = models.vit_b_16(pretrained=pretrained)
+        if pretrained:
+            # Freeze the weights of the pretrained ViT model
+            for param in self.vit.parameters():
+                param.requires_grad = False
+        self.fc = nn.Linear(self.vit.num_features, num_classes)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.vit(x)
+        x = self.fc(x)
+        #x = self.sigmoid(x)
+        return x
 
 def main(args):
 
     batch_size = args.batch_size
     device = "cuda:" + str(args.device)
 
-    model = models.resnet50(pretrained=True)
-    model.fc = torch.nn.Linear(2048, 2)
-    if args.load_path:
-        load_path = args.load_path
-        m_state_dict = torch.load(load_path,map_location='cuda')
-        model.load_state_dict(m_state_dict)
-    model = model.to(device)
-
+    if args.model=="resnet":
+        model = models.resnet50(pretrained=True)
+        model.fc = torch.nn.Linear(2048, 2)
+        if args.load_path:
+            load_path = args.load_path
+            m_state_dict = torch.load(load_path,map_location='cuda')
+            model.load_state_dict(m_state_dict)
+        model = model.to(device)
+    elif args.model=='vit':
+        model = models.vit_b_16(pretrained=True)
+        model.heads = torch.nn.Linear(768, 2)
+        if args.load_path:
+            load_path = args.load_path
+            m_state_dict = torch.load(load_path,map_location='cuda')
+            model.load_state_dict(m_state_dict)
+        model = model.to(device)
     atk = PGD(
         model,
         eps=args.atk_eps,

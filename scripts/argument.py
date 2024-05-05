@@ -12,10 +12,13 @@ def parser():
     )
     parser.add_argument("--device", default="0", type=str, help="0123")
 
+    parser.add_argument("--model", default="resnet", type=str, help="resnet,vit")
+
     parser.add_argument("--dataset", default="face_dataset")
     parser.add_argument("--train_dataset2", default=None)
     parser.add_argument("--val_dataset2", default=None)
     parser.add_argument("--epoches", type=int, default=10)
+    parser.add_argument("--adv_test", default=False, action="store_true")
     parser.add_argument("--save_each_epoch", type=int, default=5)
     parser.add_argument("--save_path", default="face1")
     parser.add_argument("--lr", default=5e-5)
