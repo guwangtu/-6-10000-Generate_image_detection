@@ -14,6 +14,7 @@ def parser():
 
     parser.add_argument("--model", default="resnet", type=str, help="resnet,vit")
 
+    parser.add_argument("--artifact", default=None)
     parser.add_argument("--dataset", default="face_dataset")
     parser.add_argument("--train_dataset2", default=None)
     parser.add_argument("--val_dataset2", default=None)
@@ -30,5 +31,7 @@ def parser():
     parser.add_argument("--atk_eps", default=8 / 255)
     parser.add_argument("--atk_alpha", default=2 / 225)
     parser.add_argument("--atk_steps", type=int, default=10)
+
+    parser.add_argument("--test_first", default=False, action="store_true")
 
     return parser.parse_args()

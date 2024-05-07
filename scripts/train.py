@@ -19,6 +19,8 @@ from tqdm import tqdm
 
 from argument import parser
 
+from load_data_artifact import load_artifact
+
 
 class Trainer:
     def __init__(self, args, atk):
@@ -26,7 +28,15 @@ class Trainer:
         self.atk = atk
         self.device = "cuda:" + args.device
 
-    def train(self, model, train_loader, val_loader, adv_train=False,train_loader2=None,val_loader2=None):
+    def train(
+        self,
+        model,
+        train_loader,
+        val_loader,
+        adv_train=False,
+        train_loader2=None,
+        val_loader2=None,
+    ):
         args = self.args
         atk = self.atk
         criterion = torch.nn.CrossEntropyLoss()
@@ -40,10 +50,22 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
+        if args.test_first:
+            self.evaluate(
+                model,
+                val_loader,
+                adv_test=args.adv_test,
+                atk=atk,
+                val_loader2=val_loader2,
+            )
         for epoch in range(args.load_epoch, args.epoches):
             train_loss, train_acc = self.train_step(
-                model, train_loader, optimizer, criterion,adv_train=False,train_loader2=train_loader2
+                model,
+                train_loader,
+                optimizer,
+                criterion,
+                adv_train=False,
+                train_loader2=train_loader2,
             )
             print(
                 "epoch"
@@ -55,7 +77,12 @@ class Trainer:
             )
             if adv_train:
                 train_loss, train_acc = self.train_step(
-                    model, train_loader, optimizer, criterion, adv_train=True,train_loader2=train_loader2
+                    model,
+                    train_loader,
+                    optimizer,
+                    criterion,
+                    adv_train=True,
+                    train_loader2=train_loader2,
                 )
                 print(
                     "epoch"
@@ -67,16 +94,32 @@ class Trainer:
                 )
 
             if (epoch + 1) % args.save_each_epoch == 0:
-                self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
+                self.evaluate(
+                    model,
+                    val_loader,
+                    adv_test=args.adv_test,
+                    atk=atk,
+                    val_loader2=val_loader2,
+                )
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
-        self.evaluate(model, val_loader, adv_test=args.adv_test, atk=atk,val_loader2=val_loader2)
+        self.evaluate(
+            model, val_loader, adv_test=args.adv_test, atk=atk, val_loader2=val_loader2
+        )
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
 
-    def train_step(self, model, train_loader, optimizer, criterion, adv_train=False,train_loader2=None):
+    def train_step(
+        self,
+        model,
+        train_loader,
+        optimizer,
+        criterion,
+        adv_train=False,
+        train_loader2=None,
+    ):
         args = self.args
         atk = self.atk
         device = self.device
@@ -99,7 +142,7 @@ class Trainer:
                 target = model(adv_image)
             else:
                 target = model(image)
-            loss = criterion(target, label)  
+            loss = criterion(target, label)
             max_value, max_index = torch.max(target, 1)
             pred_label = max_index.cpu().numpy()
             true_label = label.cpu().numpy()
@@ -107,19 +150,19 @@ class Trainer:
             train_sum += pred_label.shape[0]
             if train_loader2:
                 try:
-                    image, label = next(dataloader_iterator) 
+                    image, label = next(dataloader_iterator)
                 except StopIteration:
                     dataloader_iterator = iter(train_loader2)
                     image, label = next(dataloader_iterator)
                 image = image.to(device)
-                label = label.to(device) 
+                label = label.to(device)
                 if adv_train:
                     adv_image = atk(image, label)
                     target = model(adv_image)
                 else:
                     target = model(image)
                 loss2 = criterion(target, label)
-                loss=loss+loss2
+                loss = loss + loss2
                 max_value, max_index = torch.max(target, 1)
                 pred_label = max_index.cpu().numpy()
                 true_label = label.cpu().numpy()
@@ -134,10 +177,9 @@ class Trainer:
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0]
 
-
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(self, model, val_loader, adv_test=False, atk=None,val_loader2=None):
+    def evaluate(self, model, val_loader, adv_test=False, atk=None, val_loader2=None):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
@@ -150,7 +192,12 @@ class Trainer:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader2, criterion, adv_test=False, atk=atk
             )
-            print("another_val_loss:" + str(test_loss) + "  another_val_acc:" + str(test_acc))           
+            print(
+                "another_val_loss:"
+                + str(test_loss)
+                + "  another_val_acc:"
+                + str(test_acc)
+            )
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False, atk=None):
         device = self.device
@@ -200,42 +247,26 @@ class Trainer:
                     imgs[t], f"{save_path}/{str(this_label)}/{str(k)}.png"
                 )
 
-class ViT(nn.Module):
-    def __init__(self, num_classes=1, pretrained=True):
-        super(ViT, self).__init__()
-        self.vit = models.vit_b_16(pretrained=pretrained)
-        if pretrained:
-            # Freeze the weights of the pretrained ViT model
-            for param in self.vit.parameters():
-                param.requires_grad = False
-        self.fc = nn.Linear(self.vit.num_features, num_classes)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        x = self.vit(x)
-        x = self.fc(x)
-        #x = self.sigmoid(x)
-        return x
 
 def main(args):
 
     batch_size = args.batch_size
     device = "cuda:" + str(args.device)
 
-    if args.model=="resnet":
+    if args.model == "resnet":
         model = models.resnet50(pretrained=True)
         model.fc = torch.nn.Linear(2048, 2)
         if args.load_path:
             load_path = args.load_path
-            m_state_dict = torch.load(load_path,map_location='cuda')
+            m_state_dict = torch.load(load_path, map_location="cuda")
             model.load_state_dict(m_state_dict)
         model = model.to(device)
-    elif args.model=='vit':
+    elif args.model == "vit":
         model = models.vit_b_16(pretrained=True)
         model.heads = torch.nn.Linear(768, 2)
         if args.load_path:
             load_path = args.load_path
-            m_state_dict = torch.load(load_path,map_location='cuda')
+            m_state_dict = torch.load(load_path, map_location="cuda")
             model.load_state_dict(m_state_dict)
         model = model.to(device)
     atk = PGD(
@@ -283,26 +314,38 @@ def main(args):
             ]
         )
 
-        train_data = datasets.ImageFolder(train_path, transform=train_transform)
+        if args.artifact:
+            train_data, val_data = load_artifact(
+                path=dataset_path, transform=train_transform
+            )
+        else:
+            train_data = datasets.ImageFolder(train_path, transform=train_transform)
+            val_data = datasets.ImageFolder(val_path, transform=val_transform)
+
         train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
-        val_data = datasets.ImageFolder(val_path, transform=val_transform)
         val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
         if args.train_dataset2:
             print("using train_dataset2")
             train_path2 = args.train_dataset2
             train_data2 = datasets.ImageFolder(train_path2, transform=train_transform)
-            train_loader2 = data.DataLoader(train_data2, batch_size=batch_size, shuffle=True)
+            train_loader2 = data.DataLoader(
+                train_data2, batch_size=batch_size, shuffle=True
+            )
         else:
-            train_loader2=None
+            train_loader2 = None
         if args.val_dataset2:
             print("using val_dataset2")
             val_path2 = args.val_dataset2
             val_data2 = datasets.ImageFolder(val_path2, transform=val_transform)
-            val_loader2 = data.DataLoader(val_data2, batch_size=batch_size, shuffle=True)
+            val_loader2 = data.DataLoader(
+                val_data2, batch_size=batch_size, shuffle=True
+            )
         else:
-            val_loader2=None
-        trainer.train(model, train_loader, val_loader, args.adv,train_loader2,val_loader2)
+            val_loader2 = None
+        trainer.train(
+            model, train_loader, val_loader, args.adv, train_loader2, val_loader2
+        )
 
     elif args.todo == "test":
 
