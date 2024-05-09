@@ -14,7 +14,6 @@ def parser():
 
     parser.add_argument("--model", default="resnet", type=str, help="resnet,vit")
 
-    parser.add_argument("--artifact", default=None)
     parser.add_argument("--dataset", default="face_dataset")
     parser.add_argument("--train_dataset2", default=None)
     parser.add_argument("--val_dataset2", default=None)
@@ -24,6 +23,7 @@ def parser():
     parser.add_argument("--save_path", default="face1")
     parser.add_argument("--lr", default=5e-5)
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--load_path", default=None)
     parser.add_argument("--load_epoch", type=int, default=0)
 
@@ -33,5 +33,8 @@ def parser():
     parser.add_argument("--atk_steps", type=int, default=10)
 
     parser.add_argument("--test_first", default=False, action="store_true")
+    parser.add_argument("--artifact", default=False, action="store_true")
+
+    parser.add_argument("--log_path", default="log/training.log")
 
     return parser.parse_args()

@@ -18,14 +18,16 @@ import cv2
 from tqdm import tqdm
 
 from argument import parser
+import logging
 
 from load_data_artifact import load_artifact
 
 
 class Trainer:
-    def __init__(self, args, atk):
+    def __init__(self, args, atk, logger=None):
         self.args = args
         self.atk = atk
+        self.logger = logger
         self.device = "cuda:" + args.device
 
     def train(
@@ -50,10 +52,18 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
+
+        file_handler = logging.FileHandler(save_path + "/training.log")  # 指定日志文件路径
+        # 设置日志消息的格式
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+
         if args.test_first:
             self.evaluate(
                 model,
                 val_loader,
+                epoch=0,
                 adv_test=args.adv_test,
                 atk=atk,
                 val_loader2=val_loader2,
@@ -75,6 +85,7 @@ class Trainer:
                 + "  train_acc:"
                 + str(train_acc)
             )
+            logging.info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
             if adv_train:
                 train_loss, train_acc = self.train_step(
                     model,
@@ -97,6 +108,7 @@ class Trainer:
                 self.evaluate(
                     model,
                     val_loader,
+                    epoch=epoch + 1,
                     adv_test=args.adv_test,
                     atk=atk,
                     val_loader2=val_loader2,
@@ -105,7 +117,12 @@ class Trainer:
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
         self.evaluate(
-            model, val_loader, adv_test=args.adv_test, atk=atk, val_loader2=val_loader2
+            model,
+            val_loader,
+            epoch=args.epoches,
+            adv_test=args.adv_test,
+            atk=atk,
+            val_loader2=val_loader2,
         )
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
@@ -179,15 +196,19 @@ class Trainer:
 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(self, model, val_loader, adv_test=False, atk=None, val_loader2=None):
+    def evaluate(
+        self, model, val_loader, epoch, adv_test=False, atk=None, val_loader2=None
+    ):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
+        logging.info(f"Epoch{epoch}: Evaluate accuracy: {test_acc:.4f}")
         if adv_test:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader, criterion, adv_test=True, atk=atk
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
+            logging.info(f"Epoch{epoch}: Adv evaluate accuracy: {test_acc:.4f}")
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader2, criterion, adv_test=False, atk=atk
@@ -198,6 +219,7 @@ class Trainer:
                 + "  another_val_acc:"
                 + str(test_acc)
             )
+            logging.info(f"Epoch{epoch}: Another Evaluate accuracy: {test_acc:.4f}")
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False, atk=None):
         device = self.device
@@ -253,6 +275,10 @@ def main(args):
     batch_size = args.batch_size
     device = "cuda:" + str(args.device)
 
+    # 配置日志记录器
+    logging.basicConfig(level=logging.INFO)  # 设置日志级别为INFO或更高级别
+    logger = logging.getLogger()
+
     if args.model == "resnet":
         model = models.resnet50(pretrained=True)
         model.fc = torch.nn.Linear(2048, 2)
@@ -278,7 +304,7 @@ def main(args):
     )
     atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
 
-    trainer = Trainer(args, atk)
+    trainer = Trainer(args, atk, logger)
 
     if args.adv:
         print("adv:True")
@@ -322,15 +348,25 @@ def main(args):
             train_data = datasets.ImageFolder(train_path, transform=train_transform)
             val_data = datasets.ImageFolder(val_path, transform=val_transform)
 
-        train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
-        val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
+        train_loader = data.DataLoader(
+            train_data,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+        )
+        val_loader = data.DataLoader(
+            val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+        )
 
         if args.train_dataset2:
             print("using train_dataset2")
             train_path2 = args.train_dataset2
             train_data2 = datasets.ImageFolder(train_path2, transform=train_transform)
             train_loader2 = data.DataLoader(
-                train_data2, batch_size=batch_size, shuffle=True
+                train_data2,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=args.num_workers,
             )
         else:
             train_loader2 = None
@@ -339,7 +375,10 @@ def main(args):
             val_path2 = args.val_dataset2
             val_data2 = datasets.ImageFolder(val_path2, transform=val_transform)
             val_loader2 = data.DataLoader(
-                val_data2, batch_size=batch_size, shuffle=True
+                val_data2,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=args.num_workers,
             )
         else:
             val_loader2 = None
@@ -359,7 +398,9 @@ def main(args):
         )
 
         val_data = datasets.ImageFolder(val_path, transform=val_transform)
-        val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True)
+        val_loader = data.DataLoader(
+            val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+        )
 
         trainer.evaluate(model, val_loader, adv_test=args.adv, atk=atk)
 
@@ -376,7 +417,9 @@ def main(args):
             ]
         )
         imgdata = datasets.ImageFolder(dataset_path, transform=transform)
-        data_loader = data.DataLoader(imgdata, batch_size=batch_size, shuffle=True)
+        data_loader = data.DataLoader(
+            imgdata, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+        )
 
         trainer.get_adv_imgs(data_loader, atk=atk)
 
