@@ -24,10 +24,10 @@ from load_data_artifact import load_artifact
 
 
 class Trainer:
-    def __init__(self, args, atk,logger=None):
+    def __init__(self, args, atk, logger=None):
         self.args = args
         self.atk = atk
-        self.logger=logger
+        self.logger = logger
         self.device = "cuda:" + args.device
 
     def train(
@@ -53,9 +53,9 @@ class Trainer:
 
         os.mkdir(save_path)
 
-        file_handler = logging.FileHandler(save_path+'/training.log')  # 指定日志文件路径
+        file_handler = logging.FileHandler(save_path + "/training.log")  # 指定日志文件路径
         # 设置日志消息的格式
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
 
@@ -74,7 +74,7 @@ class Trainer:
                 train_loader,
                 optimizer,
                 criterion,
-                adv_train=False,
+                adv_train=adv_train,
                 train_loader2=train_loader2,
             )
             print(
@@ -85,30 +85,13 @@ class Trainer:
                 + "  train_acc:"
                 + str(train_acc)
             )
-            logging.info(f'Epoch{epoch}: Training accuracy: {train_acc:.4f}')
-            if adv_train:
-                train_loss, train_acc = self.train_step(
-                    model,
-                    train_loader,
-                    optimizer,
-                    criterion,
-                    adv_train=True,
-                    train_loader2=train_loader2,
-                )
-                print(
-                    "epoch"
-                    + str(epoch + 1)
-                    + "  adv_train_loss:"
-                    + str(train_loss)
-                    + "  adv_train_acc:"
-                    + str(train_acc)
-                )
+            logging.info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
 
             if (epoch + 1) % args.save_each_epoch == 0:
                 self.evaluate(
                     model,
                     val_loader,
-                    epoch=epoch+1,
+                    epoch=epoch + 1,
                     adv_test=args.adv_test,
                     atk=atk,
                     val_loader2=val_loader2,
@@ -117,7 +100,12 @@ class Trainer:
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
         self.evaluate(
-            model, val_loader,epoch= args.epoches, adv_test=args.adv_test, atk=atk, val_loader2=val_loader2
+            model,
+            val_loader,
+            epoch=args.epoches,
+            adv_test=args.adv_test,
+            atk=atk,
+            val_loader2=val_loader2,
         )
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
@@ -147,39 +135,30 @@ class Trainer:
         for i, (image, label) in enumerate(tqdm(train_loader)):
             image = image.to(device)
             label = label.to(device)
+
+            if train_loader2:
+                try:
+                    image2, label2 = next(dataloader_iterator)
+                except StopIteration:
+                    dataloader_iterator = iter(train_loader2)
+                    image2, label2 = next(dataloader_iterator)
+                image2 = image2.to(device)
+                label2 = label2.to(device)
+
+                image = torch.cat([image, image2], dim=0)
+                label = torch.cat([label, label2], dim=0)
+
             optimizer.zero_grad()
+            target = model(image)
 
             if adv_train:
                 adv_image = atk(image, label)
-                target = model(adv_image)
-            else:
-                target = model(image)
+                target2 = model(adv_image)
+                target = torch.cat([target, target2], dim=0)
+                label = torch.cat([label, label.clone()], dim=0)
+
             loss = criterion(target, label)
-            max_value, max_index = torch.max(target, 1)
-            pred_label = max_index.cpu().numpy()
-            true_label = label.cpu().numpy()
-            train_corrects += np.sum(pred_label == true_label)
-            train_sum += pred_label.shape[0]
-            if train_loader2:
-                try:
-                    image, label = next(dataloader_iterator)
-                except StopIteration:
-                    dataloader_iterator = iter(train_loader2)
-                    image, label = next(dataloader_iterator)
-                image = image.to(device)
-                label = label.to(device)
-                if adv_train:
-                    adv_image = atk(image, label)
-                    target = model(adv_image)
-                else:
-                    target = model(image)
-                loss2 = criterion(target, label)
-                loss = loss + loss2
-                max_value, max_index = torch.max(target, 1)
-                pred_label = max_index.cpu().numpy()
-                true_label = label.cpu().numpy()
-                train_corrects += np.sum(pred_label == true_label)
-                train_sum += pred_label.shape[0]
+
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -191,17 +170,19 @@ class Trainer:
 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(self, model, val_loader,epoch, adv_test=False, atk=None, val_loader2=None):
+    def evaluate(
+        self, model, val_loader, epoch, adv_test=False, atk=None, val_loader2=None
+    ):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
-        logging.info(f'Epoch{epoch}: Evaluate accuracy: {test_acc:.4f}')
+        logging.info(f"Epoch{epoch}: Evaluate accuracy: {test_acc:.4f}")
         if adv_test:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader, criterion, adv_test=True, atk=atk
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
-            logging.info(f'Epoch{epoch}: Adv evaluate accuracy: {test_acc:.4f}')
+            logging.info(f"Epoch{epoch}: Adv evaluate accuracy: {test_acc:.4f}")
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader2, criterion, adv_test=False, atk=atk
@@ -212,7 +193,8 @@ class Trainer:
                 + "  another_val_acc:"
                 + str(test_acc)
             )
-            logging.info(f'Epoch{epoch}: Another Evaluate accuracy: {test_acc:.4f}')
+            logging.info(f"Epoch{epoch}: Another Evaluate accuracy: {test_acc:.4f}")
+
     def evaluate_step(self, model, val_loader, criterion, adv_test=False, atk=None):
         device = self.device
 
@@ -296,7 +278,7 @@ def main(args):
     )
     atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
 
-    trainer = Trainer(args, atk,logger)
+    trainer = Trainer(args, atk, logger)
 
     if args.adv:
         print("adv:True")
@@ -340,15 +322,25 @@ def main(args):
             train_data = datasets.ImageFolder(train_path, transform=train_transform)
             val_data = datasets.ImageFolder(val_path, transform=val_transform)
 
-        train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True,num_workers=args.num_workers)
-        val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True,num_workers=args.num_workers)
+        train_loader = data.DataLoader(
+            train_data,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+        )
+        val_loader = data.DataLoader(
+            val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+        )
 
         if args.train_dataset2:
             print("using train_dataset2")
             train_path2 = args.train_dataset2
             train_data2 = datasets.ImageFolder(train_path2, transform=train_transform)
             train_loader2 = data.DataLoader(
-                train_data2, batch_size=batch_size, shuffle=True,num_workers=args.num_workers
+                train_data2,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=args.num_workers,
             )
         else:
             train_loader2 = None
@@ -357,7 +349,10 @@ def main(args):
             val_path2 = args.val_dataset2
             val_data2 = datasets.ImageFolder(val_path2, transform=val_transform)
             val_loader2 = data.DataLoader(
-                val_data2, batch_size=batch_size, shuffle=True,num_workers=args.num_workers
+                val_data2,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=args.num_workers,
             )
         else:
             val_loader2 = None
@@ -377,7 +372,9 @@ def main(args):
         )
 
         val_data = datasets.ImageFolder(val_path, transform=val_transform)
-        val_loader = data.DataLoader(val_data, batch_size=batch_size, shuffle=True,num_workers=args.num_workers)
+        val_loader = data.DataLoader(
+            val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+        )
 
         trainer.evaluate(model, val_loader, adv_test=args.adv, atk=atk)
 
@@ -394,7 +391,9 @@ def main(args):
             ]
         )
         imgdata = datasets.ImageFolder(dataset_path, transform=transform)
-        data_loader = data.DataLoader(imgdata, batch_size=batch_size, shuffle=True,num_workers=args.num_workers)
+        data_loader = data.DataLoader(
+            imgdata, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+        )
 
         trainer.get_adv_imgs(data_loader, atk=atk)
 
