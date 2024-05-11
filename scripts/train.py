@@ -150,14 +150,11 @@ class Trainer:
 
             optimizer.zero_grad()
             target = model(image)
-
+            loss = criterion(target, label)
             if adv_train:
                 adv_image = atk(image, label)
-                target2 = model(adv_image)
-                target = torch.cat([target, target2], dim=0)
-                label = torch.cat([label, label.clone()], dim=0)
-
-            loss = criterion(target, label)
+                target2 = model(adv_image) 
+                loss = loss + criterion(target2, label)
 
             loss.backward()
             optimizer.step()
