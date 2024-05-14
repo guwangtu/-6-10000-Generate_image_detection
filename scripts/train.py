@@ -274,7 +274,8 @@ def main(args):
         random_start=True,
     )
     atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
-
+    atk.set_device(device)
+    
     trainer = Trainer(args, atk, logger)
 
     if args.adv:
