@@ -99,6 +99,16 @@ class Trainer:
                 torch.save(
                     model.state_dict(), save_path + "/epoch" + str(epoch + 1) + ".pt"
                 )
+            if args.adv and (epoch + 1) % args.update_adv_each_epoch == 0:
+                self.atk = PGD(
+                    model,
+                    eps=args.atk_eps,
+                    alpha=args.atk_alpha,
+                    steps=args.atk_steps,
+                    random_start=True,
+                )
+                self.atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
+                self.atk.set_device(self.device)
         self.evaluate(
             model,
             val_loader,
@@ -135,7 +145,6 @@ class Trainer:
         for i, (image, label) in enumerate(tqdm(train_loader)):
             image = image.to(device)
             label = label.to(device)
-
             if train_loader2:
                 try:
                     image2, label2 = next(dataloader_iterator)
@@ -153,9 +162,8 @@ class Trainer:
             loss = criterion(target, label)
             if adv_train:
                 adv_image = atk(image, label)
-                target2 = model(adv_image) 
+                target2 = model(adv_image)
                 loss = loss + criterion(target2, label)
-
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -164,7 +172,6 @@ class Trainer:
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0]
-
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
     def evaluate(
@@ -275,7 +282,7 @@ def main(args):
     )
     atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
     atk.set_device(device)
-    
+
     trainer = Trainer(args, atk, logger)
 
     if args.adv:
