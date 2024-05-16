@@ -63,8 +63,7 @@ class Trainer:
                 model,
                 val_loader,
                 epoch=0,
-                adv_test=args.adv_test,
-                atk=atk,
+                adv_test=args.adv or args.adv_test,
                 val_loader2=val_loader2,
             )
         for epoch in range(args.load_epoch, args.epoches):
@@ -130,7 +129,6 @@ class Trainer:
             val_loader,
             epoch=args.epoches,
             adv_test=args.adv_test,
-            atk=atk,
             val_loader2=val_loader2,
         )
         torch.save(
