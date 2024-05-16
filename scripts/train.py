@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from scripts.load_data import load_artifact
+from load_data import load_artifact
 
 
 class Trainer:
