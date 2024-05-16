@@ -326,7 +326,7 @@ def main(args):
                 transforms.ColorJitter(brightness=0.1),  # 颜色亮度
                 transforms.Resize([224, 224]),  # 设置成224×224大小的张量
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
+                #transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
             ]
         )
 
