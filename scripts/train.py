@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from load_data_artifact import load_artifact
+from scripts.load_data import load_artifact
 
 
 class Trainer:
@@ -92,8 +92,7 @@ class Trainer:
                     model,
                     val_loader,
                     epoch=epoch + 1,
-                    adv_test=args.adv_test,
-                    atk=atk,
+                    adv_test=args.adv_test or args.adv,
                     val_loader2=val_loader2,
                 )
                 torch.save(
@@ -175,7 +174,7 @@ class Trainer:
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
     def evaluate(
-        self, model, val_loader, epoch, adv_test=False, atk=None, val_loader2=None
+        self, model, val_loader, epoch, adv_test=False, val_loader2=None
     ):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
@@ -183,13 +182,13 @@ class Trainer:
         logging.info(f"Epoch{epoch}: Evaluate accuracy: {test_acc:.4f}")
         if adv_test:
             test_loss, d, test_acc = self.evaluate_step(
-                model, val_loader, criterion, adv_test=True, atk=atk
+                model, val_loader, criterion, adv_test=True
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
             logging.info(f"Epoch{epoch}: Adv evaluate accuracy: {test_acc:.4f}")
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
-                model, val_loader2, criterion, adv_test=False, atk=atk
+                model, val_loader2, criterion, adv_test=False
             )
             print(
                 "another_val_loss:"
@@ -199,9 +198,9 @@ class Trainer:
             )
             logging.info(f"Epoch{epoch}: Another Evaluate accuracy: {test_acc:.4f}")
 
-    def evaluate_step(self, model, val_loader, criterion, adv_test=False, atk=None):
+    def evaluate_step(self, model, val_loader, criterion, adv_test=False):
         device = self.device
-
+        atk=self.atk
         model.eval()
         corrects = eval_loss = 0
         test_sum = 0
@@ -300,6 +299,7 @@ def main(args):
             os.mkdir("checkpoint")
         if not os.path.isdir(save_path):
             os.mkdir(save_path)
+        logging.info(f"Save in: {save_path}")
 
         train_transform = transforms.Compose(
             [
@@ -307,8 +307,7 @@ def main(args):
                 transforms.ColorJitter(brightness=0.1),  # 颜色亮度
                 transforms.Resize([224, 224]),  # 设置成224×224大小的张量
                 transforms.ToTensor(),
-                # transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                # std=[0.229, 0.224, 0.225]),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
             ]
         )
 
