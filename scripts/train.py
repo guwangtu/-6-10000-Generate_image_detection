@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from load_data import load_artifact
+from load_data import load_artifact,load_diffusion_forensics_fold
 
 
 class Trainer:
@@ -271,6 +271,7 @@ def main(args):
             m_state_dict = torch.load(load_path, map_location="cuda")
             model.load_state_dict(m_state_dict)
         model = model.to(device)
+
     atk = PGD(
         model,
         eps=args.atk_eps,
@@ -322,8 +323,7 @@ def main(args):
                 path=dataset_path, transform=train_transform
             )
         else:
-            train_data = datasets.ImageFolder(train_path, transform=train_transform)
-            val_data = datasets.ImageFolder(val_path, transform=val_transform)
+            train_data, val_data = load_diffusion_forensics_fold(dataset_path, train_transform, val_transform)
 
         train_loader = data.DataLoader(
             train_data,
@@ -379,7 +379,7 @@ def main(args):
             val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
         )
 
-        trainer.evaluate(model, val_loader, adv_test=args.adv, atk=atk)
+        trainer.evaluate(model, val_loader, adv_test=args.adv)
 
     elif args.todo == "get_adv_imgs":
 

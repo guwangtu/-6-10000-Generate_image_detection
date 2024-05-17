@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from load_data import load_artifact
+from load_data import load_artifact,load_diffusion_forensics_fold
   
 class Trainer:
     def __init__(self, args, atk, logger=None):
@@ -340,8 +340,7 @@ def main(args):
                 path=dataset_path, transform=train_transform
             )
         else:
-            train_data = datasets.ImageFolder(train_path, transform=train_transform)
-            val_data = datasets.ImageFolder(val_path, transform=val_transform)
+            train_data, val_data = load_diffusion_forensics_fold(dataset_path, train_transform, val_transform)
 
         train_loader = data.DataLoader(
             train_data,
