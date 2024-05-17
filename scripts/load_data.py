@@ -37,7 +37,38 @@ def spilt_dataset(dataset,validation_split=0.2):
     )
     return train_dataset,val_dataset
 
+def load_diffusion_forensics_fold(path,train_transform,val_transform):
+    train_path=path+'/train'
+    test_path=path+'/test'
+    return load_single_dataset(train_path,train_transform), load_single_dataset(test_path,val_transform)
+    
+def load_single_dataset(path,transform):
+    real_list = ['real']
+    datasets=[]
+    for file in os.listdir(path):
+        if file in real_list:
+            label=[0]
+        else:
+            label=[1]
+        fold_path=path+'/'+file
+        images=load_image_fold(fold_path)
+        labels=label*len(images)
+        
+        datasets.append(MyDataset(images,labels,transform))
+    return ConcatDataset(datasets)
 
+def load_image_fold(path):
+    paths = []
+    for root, dirs, files in os.walk(path):
+        if dirs:
+            for d in dirs:
+                paths.extend(load_image_fold(os.path.join(root, d)))
+        else:
+            for file in files:
+                paths.append(os.path.join(root, file))
+    return paths
+        
+        
 
 def load_artifact(path, transform, validation_split=0.2):  # real 0
     real_list = [
