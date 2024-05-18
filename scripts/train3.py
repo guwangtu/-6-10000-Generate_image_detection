@@ -332,7 +332,7 @@ def main(args):
                 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
                 return train_dataset,val_dataset
             
-            data11 = datasets.ImageFolder(train_path2, transform=train_transform)
+            data11 = datasets.ImageFolder(train_path, transform=val_transform)
             train_data, val_data = spilt_dataset(data11)
 
         train_loader = data.DataLoader(
