@@ -44,12 +44,6 @@ class Trainer:
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-        file_handler = logging.FileHandler(save_path + "/training.log")  # 指定日志文件路径
-        # 设置日志消息的格式
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        self.logger.addHandler(file_handler)
-
         save_path = "checkpoint/" + args.save_path
         int_files = [int(file) for file in os.listdir(save_path)]
         if len(int_files) == 0:
@@ -58,6 +52,12 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
+        file_handler = logging.FileHandler(save_path + "/training.log")  # 指定日志文件路径
+        # 设置日志消息的格式
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+
 
         logging.info(f"Save in: {save_path}")
 
