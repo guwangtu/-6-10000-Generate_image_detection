@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from load_data import load_artifact,load_diffusion_forensics_fold
+from load_data import load_artifact, load_fold,spilt_dataset
 
 
 class Trainer:
@@ -52,12 +52,12 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-
         file_handler = logging.FileHandler(save_path + "/training.log")  # 指定日志文件路径
         # 设置日志消息的格式
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
+
 
         logging.info(f"Save in: {save_path}")
 
@@ -113,13 +113,12 @@ class Trainer:
             model,
             val_loader,
             epoch=args.epoches,
-            adv_test=args.adv_test,
+            adv_test=args.adv_test or args.adv,
             val_loader2=val_loader2,
         )
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
-
 
     def train_step(
         self,
@@ -174,9 +173,7 @@ class Trainer:
             train_sum += pred_label.shape[0]
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(
-        self, model, val_loader, epoch, adv_test=False, val_loader2=None
-    ):
+    def evaluate(self, model, val_loader, epoch, adv_test=False, val_loader2=None):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
@@ -201,7 +198,7 @@ class Trainer:
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False):
         device = self.device
-        atk=self.atk
+        atk = self.atk
         model.eval()
         corrects = eval_loss = 0
         test_sum = 0
@@ -218,9 +215,7 @@ class Trainer:
                 pred_label = max_index.cpu().numpy()
                 true_label = label.cpu().numpy()
                 corrects += np.sum(pred_label == true_label)
-                test_sum += np.sum(pred_label == true_label) + np.sum(
-                    pred_label != true_label
-                )
+                test_sum += pred_label.shape[0]
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
 
     def get_adv_imgs(self, data_loader, atk):
@@ -281,7 +276,7 @@ def main(args):
         steps=args.atk_steps,
         random_start=True,
     )
-    atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
+    atk.set_normalization_used(mean=[0,0,0],std=[1,1,1])
     atk.set_device(device)
 
     trainer = Trainer(args, atk, logger)
@@ -321,19 +316,13 @@ def main(args):
 
         if args.artifact:
             train_data, val_data = load_artifact(
-                path=dataset_path, transform=train_transform
+                dataset_path, train_transform, val_transform
             )
         else:
-            #train_data, val_data = load_diffusion_forensics_fold(dataset_path, train_transform, val_transform)
-            from torch.utils.data import random_split
-            def spilt_dataset(dataset,validation_split=0.2):
-                train_size = int((1 - validation_split) * len(dataset))
-                val_size = len(dataset) - train_size
-                train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-                return train_dataset,val_dataset
-            
-            data11 = datasets.ImageFolder(train_path, transform=val_transform)
-            train_data, val_data = spilt_dataset(data11)
+            train_data, val_data = load_fold(
+                dataset_path, train_transform, val_transform
+            )
+            train_data,val_data=spilt_dataset(train_data)
 
         train_loader = data.DataLoader(
             train_data,
