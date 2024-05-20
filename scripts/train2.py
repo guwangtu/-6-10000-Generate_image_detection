@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from load_data import load_artifact, load_fold
+from load_data import load_artifact, load_fold,spilt_dataset
 
 
 class Trainer:
@@ -322,6 +322,7 @@ def main(args):
             train_data, val_data = load_fold(
                 dataset_path, train_transform, val_transform
             )
+            train_data,val_data=spilt_dataset(train_data)
 
         train_loader = data.DataLoader(
             train_data,
