@@ -28,8 +28,8 @@ def parser():
     parser.add_argument("--load_epoch", type=int, default=0)
 
     parser.add_argument("--adv", default=False, action="store_true")
-    parser.add_argument("--atk_eps", default=8 / 255)
-    parser.add_argument("--atk_alpha", default=2 / 225)
+    parser.add_argument("--atk_eps", type=float, default=8 / 255)
+    parser.add_argument("--atk_alpha", type=float, default=2 / 225)
     parser.add_argument("--atk_steps", type=int, default=10)
     parser.add_argument("--update_adv_each_epoch", type=int, default=100)
 
