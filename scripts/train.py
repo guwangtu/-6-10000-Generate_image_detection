@@ -156,14 +156,26 @@ class Trainer:
                 image = torch.cat([image, image2], dim=0)
                 label = torch.cat([label, label2], dim=0)
 
-            optimizer.zero_grad()
+            '''optimizer.zero_grad()
             target = model(image)
             loss = criterion(target, label)
             if adv_train:
-                with torch.no_grad():
-                    adv_image = atk(image, label)
+                adv_image = atk(image, label)
                 target2 = model(adv_image)
-                loss = loss + criterion(target2, label)
+                loss = loss + criterion(target2, label)'''
+            if adv_train:
+                adv_image = atk(image, label)
+                optimizer.zero_grad()
+                target2 = model(adv_image)
+                loss1=criterion(target2, label)
+                target = model(image)
+                loss2 = criterion(target, label)
+                loss = loss1 + loss2
+            else:
+                optimizer.zero_grad()
+                target = model(image)
+                loss = criterion(target, label)
+
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
