@@ -30,64 +30,58 @@ class MyDataset(Dataset):
         return image, label
 
 
-def spilt_dataset(dataset, validation_split=0.2):  # 暂时不用，因为这么分共用transform
+def spilt_dataset(dataset,validation_split=0.2): #暂时不用，因为这么分共用transform
     train_size = int((1 - validation_split) * len(dataset))
     val_size = len(dataset) - train_size
-    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-    return train_dataset, val_dataset
-
-
-def get_spilt_dataset(
-    image_list, label_list, train_transform, val_transform, validation_split=0.2
-):
-
-    X_train, X_val, y_train, y_val = train_test_split(
-        image_list, label_list, test_size=validation_split, random_state=42
+    train_dataset, val_dataset = random_split(
+        dataset, [train_size, val_size]
     )
+    return train_dataset,val_dataset
 
-    train_dataset = MyDataset(X_train, y_train, transform=train_transform)
-    val_dataset = MyDataset(X_val, y_val, transform=val_transform)
+def get_spilt_dataset(image_list, label_list,train_transform,val_transform ,validation_split=0.2):
 
-    return train_dataset, val_dataset
+    X_train, X_val, y_train, y_val = train_test_split(image_list, label_list, test_size=validation_split, random_state=42)
 
+    train_dataset=MyDataset(X_train,y_train,transform=train_transform)
+    val_dataset=MyDataset(X_val,y_val,transform=val_transform )
 
-def load_fold(path, train_transform, val_transform):
-    train_path = path + "/train"
-    test_path = path + "/test"
-    return load_single_dataset(train_path, train_transform), load_single_dataset(
-        test_path, val_transform
-    )
+    return train_dataset,val_dataset
 
-
-def load_single_dataset(path, transform):
-    real_list = ["real", "nature"]
-    datasets = []
+def load_fold(path,train_transform,val_transform):
+    train_path=path+'/train'
+    test_path=path+'/test'
+    return load_single_dataset(train_path,train_transform), load_single_dataset(test_path,val_transform)
+    
+def load_single_dataset(path,transform):
+    real_list = ['real','nature']
+    datasets=[]
     for file in os.listdir(path):
+        if'.'in file :continue
         if file in real_list:
-            label = [0]
+            label=[0]
         else:
-            label = [1]
-        fold_path = path + "/" + file
-        images = load_image_fold(fold_path)
-        labels = label * len(images)
-
-        datasets.append(MyDataset(images, labels, transform))
+            label=[1]
+        fold_path=path+'/'+file
+        images=load_image_fold(fold_path)
+        labels=label*len(images)
+        
+        datasets.append(MyDataset(images,labels,transform))
     return ConcatDataset(datasets)
-
 
 def load_image_fold(path):
     paths = []
-    for root, dirs, files in os.walk(path):
-        if dirs:
-            for d in dirs:
-                paths.extend(load_image_fold(os.path.join(root, d)))
-        else:
-            for file in files:
-                paths.append(os.path.join(root, file))
+    root, dirs, files =next(os.walk(path))
+    if dirs:
+        for d in dirs:
+            paths.extend(load_image_fold(os.path.join(root, d)))
+    else:
+        for file in files:
+            paths.append(os.path.join(root, file))
     return paths
+        
+        
 
-
-def load_artifact(path, train_transform, val_transform, validation_split=0.2):  # real 0
+def load_artifact(path, train_transform,val_transform, validation_split=0.2):  # real 0
     real_list = [
         "afgq",
         "celebahq",
@@ -113,9 +107,7 @@ def load_artifact(path, train_transform, val_transform, validation_split=0.2):  
         else:
             labels = [0] * len(image_paths)
 
-        this_train_dataset, this_val_dataset = get_spilt_dataset(
-            image_paths, labels, train_transform, val_transform, validation_split
-        )
+        this_train_dataset, this_val_dataset = get_spilt_dataset(image_paths,labels,train_transform,val_transform, validation_split)
         train_datasets.append(this_train_dataset)
         val_datasets.append(this_val_dataset)
 
@@ -175,41 +167,46 @@ def get_annotation_artifact(
                 file2.write(test_images[i] + " " + str(test_labels[i] + "\n"))
 
 
-def load_diffusion_forensics(path, train_transform, val_transform):
+def load_diffusion_forensics(path,train_transform,val_transform):
+    train_dataset_path=path+'/train'
+    train_dataset=load_diffusion_forensics_Dataset(train_dataset_path,train_transform)
+    test_dataset_path=path+'/test'
+    test_dataset=load_diffusion_forensics_Dataset(test_dataset_path,val_transform)
+    return train_dataset, test_dataset
 
-    return
+def load_diffusion_forensics_Dataset(path,transform):
+    datasets=[]
+    for file in os.listdir(path):
+        if'.'in file :continue
+        file_path=path+'/'+file
+        datasets.append(load_single_dataset(file_path,transform))
+    return ConcatDataset(datasets)
+        
 
-
-def load_GenImage(
-    GenImage_path, imagenet_path, train_transform, val_transform, validation_split=0.2
-):  # real 0
+def load_GenImage(GenImage_path,imagenet_path,train_transform,val_transform, validation_split=0.2):# real 0
     train_datasets = []
     val_datasets = []
-
-    # load imagenet
-    train_imagenet = imagenet_path + "/train"
-    val_imagenet = imagenet_path + "/val"
-
-    train_images = load_image_fold(train_imagenet)
-    val_images = load_image_fold(val_imagenet)
-
-    train_datasets.append(
-        MyDataset(train_images, [0] * len(train_images), transform=train_transform)
-    )
-    val_datasets.append(
-        MyDataset(val_images, [0] * len(val_images), transform=val_transform)
-    )
-    # load GenImage
+    
+    #load imagenet
+    train_imagenet=imagenet_path+'/train'
+    val_imagenet=imagenet_path+'/val'
+ 
+    train_images=load_image_fold(train_imagenet)
+    val_images=load_image_fold(val_imagenet)
+      
+    train_datasets.append(MyDataset(train_images,[0]*len(train_images),transform=train_transform))
+    val_datasets.append(MyDataset(val_images,[0]*len(val_images),transform=val_transform)) 
+    #load GenImage
 
     for subfolder in os.listdir(GenImage_path):
-        this_path = os.path.join(GenImage_path, subfolder)
-        root, dirs, files = next(os.walk(this_path))
-        this_path = os.path.join(this_path, dirs[0])
-        train_path = os.path.join(this_path, "train")
-        val_path = os.path.join(this_path, "val")
+        this_path=os.path.join(GenImage_path,subfolder)
+        root, dirs, files=next(os.walk(this_path))
+        this_path=os.path.join(this_path,dirs[0])
+        train_path=os.path.join(this_path,"train")
+        val_path=os.path.join(this_path,"val")
 
-        train_datasets.append(load_single_dataset(train_path, train_transform))
-        val_datasets.append(load_single_dataset(val_path, val_transform))
+        train_datasets.append(load_single_dataset(train_path,train_transform))
+        val_datasets.append(load_single_dataset(val_path,val_transform))
 
     print("load GenImage successfully")
-    return ConcatDataset(train_datasets), ConcatDataset(val_datasets)
+    return ConcatDataset(train_datasets),ConcatDataset(val_datasets)
