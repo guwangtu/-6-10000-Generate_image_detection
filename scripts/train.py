@@ -218,10 +218,11 @@ class Trainer:
                 test_sum += pred_label.shape[0]
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
 
-    def get_adv_imgs(self, data_loader, atk):
+    def get_adv_imgs(self, data_loader):
         device = self.device
         args = self.args
-        save_path = "DIRE/" + args.save_path
+        save_path = args.save_path
+        atk= self.atk
         i = 0
         j = 0
         for image, label in tqdm(data_loader):
@@ -396,7 +397,7 @@ def main(args):
             imgdata, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
         )
 
-        trainer.get_adv_imgs(data_loader, atk=atk)
+        trainer.get_adv_imgs(data_loader)
 
 
 if __name__ == "__main__":

@@ -75,7 +75,7 @@ class Trainer:
                 train_loader,
                 optimizer,
                 criterion,
-                adv_train=adv_train,
+                adv_train=False,
                 train_loader2=train_loader2,
             )
             print(
@@ -87,7 +87,24 @@ class Trainer:
                 + str(train_acc)
             )
             logging.info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
-
+            if adv_train:
+                train_loss, train_acc = self.train_step(
+                    model,
+                    train_loader,
+                    optimizer,
+                    criterion,
+                    adv_train=True,
+                    train_loader2=train_loader2,
+                )
+                print(
+                    "epoch"
+                    + str(epoch + 1)
+                    + "  train_loss:"
+                    + str(train_loss)
+                    + "  train_acc:"
+                    + str(train_acc)
+                )
+                logging.info(f"Epoch{epoch}: ADVTraining accuracy: {train_acc:.4f}")
             if (epoch + 1) % args.save_each_epoch == 0:
                 self.evaluate(
                     model,
@@ -157,12 +174,12 @@ class Trainer:
                 label = torch.cat([label, label2], dim=0)
 
             optimizer.zero_grad()
-            target = model(image)
-            loss = criterion(target, label)
             if adv_train:
                 adv_image = atk(image, label)
-                target2 = model(adv_image)
-                loss = loss + criterion(target2, label)
+                target = model(adv_image)
+            else:
+                target = model(image)             
+            loss = criterion(target, label)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -218,10 +235,11 @@ class Trainer:
                 test_sum += pred_label.shape[0]
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
 
-    def get_adv_imgs(self, data_loader, atk):
+    def get_adv_imgs(self, data_loader):
         device = self.device
         args = self.args
-        save_path = "DIRE/" + args.save_path
+        save_path = args.save_path
+        atk= self.atk
         i = 0
         j = 0
         for image, label in tqdm(data_loader):
@@ -276,7 +294,7 @@ def main(args):
         steps=args.atk_steps,
         random_start=True,
     )
-    atk.set_normalization_used(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+    atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
     atk.set_device(device)
 
     trainer = Trainer(args, atk, logger)
@@ -303,7 +321,7 @@ def main(args):
                 transforms.ColorJitter(brightness=0.1),  # 颜色亮度
                 transforms.Resize([224, 224]),  # 设置成224×224大小的张量
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
+                # transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
             ]
         )
 
@@ -322,7 +340,6 @@ def main(args):
             train_data, val_data = load_fold(
                 dataset_path, train_transform, val_transform
             )
-            train_data,val_data=spilt_dataset(train_data)
 
         train_loader = data.DataLoader(
             train_data,
@@ -397,7 +414,7 @@ def main(args):
             imgdata, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
         )
 
-        trainer.get_adv_imgs(data_loader, atk=atk)
+        trainer.get_adv_imgs(data_loader)
 
 
 if __name__ == "__main__":
