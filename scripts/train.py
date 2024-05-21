@@ -160,7 +160,8 @@ class Trainer:
             target = model(image)
             loss = criterion(target, label)
             if adv_train:
-                adv_image = atk(image, label)
+                with torch.no_grad():
+                    adv_image = atk(image, label)
                 target2 = model(adv_image)
                 loss = loss + criterion(target2, label)
             loss.backward()
