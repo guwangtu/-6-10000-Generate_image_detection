@@ -20,7 +20,7 @@ from tqdm import tqdm
 from argument import parser
 import logging
 
-from load_data import load_artifact, load_fold
+from load_data import load_artifact, load_fold, load_diffusion_forensics, load_GenImage
 
 
 class Trainer:
@@ -57,7 +57,6 @@ class Trainer:
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
-
 
         logging.info(f"Save in: {save_path}")
 
@@ -156,18 +155,18 @@ class Trainer:
                 image = torch.cat([image, image2], dim=0)
                 label = torch.cat([label, label2], dim=0)
 
-            '''optimizer.zero_grad()
+            """optimizer.zero_grad()
             target = model(image)
             loss = criterion(target, label)
             if adv_train:
                 adv_image = atk(image, label)
                 target2 = model(adv_image)
-                loss = loss + criterion(target2, label)'''
+                loss = loss + criterion(target2, label)"""
             if adv_train:
                 adv_image = atk(image, label)
                 optimizer.zero_grad()
                 target2 = model(adv_image)
-                loss1=criterion(target2, label)
+                loss1 = criterion(target2, label)
                 target = model(image)
                 loss2 = criterion(target, label)
                 loss = loss1 + loss2
@@ -235,7 +234,7 @@ class Trainer:
         device = self.device
         args = self.args
         save_path = args.save_path
-        atk= self.atk
+        atk = self.atk
         i = 0
         j = 0
         for image, label in tqdm(data_loader):
@@ -331,6 +330,14 @@ def main(args):
         if args.artifact:
             train_data, val_data = load_artifact(
                 dataset_path, train_transform, val_transform
+            )
+        elif args.df:
+            train_data, val_data = load_diffusion_forensics(
+                dataset_path, train_transform, val_transform
+            )
+        elif args.genimage:
+            train_data, val_data = load_GenImage(
+                dataset_path, args.imagenet, train_transform, val_transform
             )
         else:
             train_data, val_data = load_fold(

@@ -35,6 +35,9 @@ def parser():
 
     parser.add_argument("--test_first", default=False, action="store_true")
     parser.add_argument("--artifact", default=False, action="store_true")
+    parser.add_argument("--df", default=False, action="store_true")
+    parser.add_argument("--genimage", default=False, action="store_true")
+    parser.add_argument("--imagenet", default=None)
 
     parser.add_argument("--log_path", default="log/training.log")
 
