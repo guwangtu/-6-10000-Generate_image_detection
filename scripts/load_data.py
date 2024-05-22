@@ -221,7 +221,9 @@ def load_GenImage(
     for subfolder in os.listdir(GenImage_path):
         this_path = os.path.join(GenImage_path, subfolder)
         root, dirs, files = next(os.walk(this_path))
-        this_path = os.path.join(this_path, dirs[0])
+        
+        if not subfolder == 'sdv4':
+            this_path = os.path.join(this_path, dirs[0])
         train_path = os.path.join(this_path, "train")
         val_path = os.path.join(this_path, "val")
 
