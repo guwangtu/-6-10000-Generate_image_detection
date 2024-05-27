@@ -1,6 +1,18 @@
 import argparse
 
 
+def str_to_float(value_str):
+    """
+    将分数形式的字符串转换为浮点数。
+    例如: "8/255" -> 0.03137254901960784
+    """
+    if "/" in value_str:
+        numerator, denominator = map(float, value_str.split("/"))
+        return numerator / denominator
+    else:
+        return float(value_str)
+
+
 def parser():
     parser = argparse.ArgumentParser(description="attack")
 
@@ -21,15 +33,16 @@ def parser():
     parser.add_argument("--adv_test", default=False, action="store_true")
     parser.add_argument("--save_each_epoch", type=int, default=5)
     parser.add_argument("--save_path", default="face1")
-    parser.add_argument("--lr", default=5e-5)
+    parser.add_argument("--lr", type=float, default=5e-5)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--load_path", default=None)
     parser.add_argument("--load_epoch", type=int, default=0)
+    parser.add_argument("--sgd", default=False, action="store_true")
 
     parser.add_argument("--adv", default=False, action="store_true")
-    parser.add_argument("--atk_eps", type=float, default=8 / 255)
-    parser.add_argument("--atk_alpha", type=float, default=2 / 225)
+    parser.add_argument("--atk_eps", type=str_to_float, default=8 / 255)
+    parser.add_argument("--atk_alpha", type=str_to_float, default=2 / 225)
     parser.add_argument("--atk_steps", type=int, default=10)
     parser.add_argument("--update_adv_each_epoch", type=int, default=100)
 

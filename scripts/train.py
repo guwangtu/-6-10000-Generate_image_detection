@@ -42,6 +42,8 @@ class Trainer:
         args = self.args
         atk = self.atk
         criterion = torch.nn.CrossEntropyLoss()
+        if args.sgd:
+            optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
         save_path = "checkpoint/" + args.save_path
@@ -257,6 +259,7 @@ class Trainer:
 
 
 def main(args):
+    print(args)
 
     batch_size = args.batch_size
     device = "cuda:" + str(args.device)

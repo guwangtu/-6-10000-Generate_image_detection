@@ -217,7 +217,16 @@ def load_GenImage(
         MyDataset(val_images, [0] * len(val_images), transform=val_transform)
     )
     # load GenImage
-    genimage_list=['ADM','BigGAN','glide','Midjourney','stable_diffusion_v_1_4','stable_diffusion_v_1_5','VQDM','VQDM']
+    genimage_list = [
+        "ADM",
+        "BigGAN",
+        "glide",
+        "Midjourney",
+        "stable_diffusion_v_1_4",
+        "stable_diffusion_v_1_5",
+        "VQDM",
+        "VQDM",
+    ]
     for subfolder in genimage_list:
         this_path = os.path.join(GenImage_path, subfolder)
         root, dirs, files = next(os.walk(this_path))
