@@ -42,7 +42,7 @@ def parser():
 
     parser.add_argument("--adv", default=False, action="store_true")
     parser.add_argument("--atk_eps", type=str_to_float, default=8 / 255)
-    parser.add_argument("--atk_alpha", type=str_to_float, default=2 / 225)
+    parser.add_argument("--atk_alpha", type=str_to_float, default=2 / 255)
     parser.add_argument("--atk_steps", type=int, default=10)
     parser.add_argument("--update_adv_each_epoch", type=int, default=100)
 
@@ -52,6 +52,6 @@ def parser():
     parser.add_argument("--genimage", default=False, action="store_true")
     parser.add_argument("--imagenet", default=None)
 
-    parser.add_argument("--log_path", default="log/training.log")
+    #parser.add_argument("--log_path", default="log/training.log") #改成自动的了
 
     return parser.parse_args()

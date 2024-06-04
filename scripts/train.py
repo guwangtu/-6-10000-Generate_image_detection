@@ -54,7 +54,7 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        file_handler = logging.FileHandler(save_path + "/training.log")  # 指定日志文件路径
+        file_handler = logging.FileHandler(save_path + "/"+args.save_path+".log")  # 指定日志文件路径
         # 设置日志消息的格式
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
@@ -157,14 +157,14 @@ class Trainer:
                 image = torch.cat([image, image2], dim=0)
                 label = torch.cat([label, label2], dim=0)
 
-            """optimizer.zero_grad()
+            optimizer.zero_grad()
             target = model(image)
             loss = criterion(target, label)
             if adv_train:
                 adv_image = atk(image, label)
                 target2 = model(adv_image)
-                loss = loss + criterion(target2, label)"""
-            if adv_train:
+                loss = loss + criterion(target2, label)
+            '''if adv_train:
                 adv_image = atk(image, label)
                 optimizer.zero_grad()
                 target2 = model(adv_image)
@@ -175,7 +175,7 @@ class Trainer:
             else:
                 optimizer.zero_grad()
                 target = model(image)
-                loss = criterion(target, label)
+                loss = criterion(target, label)'''
 
             loss.backward()
             optimizer.step()
@@ -191,13 +191,13 @@ class Trainer:
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
-        logging.info(f"Epoch{epoch}: Evaluate accuracy: {test_acc:.4f}")
+        logging.info(f"Epoch{epoch}: Loss:{test_loss} Evaluate accuracy: {test_acc:.4f}")
         if adv_test:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader, criterion, adv_test=True
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
-            logging.info(f"Epoch{epoch}: Adv evaluate accuracy: {test_acc:.4f}")
+            logging.info(f"Epoch{epoch}: Adv Loss:{test_loss} Adv evaluate accuracy: {test_acc:.4f}")
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader2, criterion, adv_test=False
@@ -208,7 +208,7 @@ class Trainer:
                 + "  another_val_acc:"
                 + str(test_acc)
             )
-            logging.info(f"Epoch{epoch}: Another Evaluate accuracy: {test_acc:.4f}")
+            logging.info(f"Epoch{epoch}: Loss:{test_loss} Another Evaluate accuracy: {test_acc:.4f}")
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False):
         device = self.device
@@ -315,8 +315,8 @@ def main(args):
 
         train_transform = transforms.Compose(
             [
-                transforms.RandomRotation(20),  # 随机旋转角度
-                transforms.ColorJitter(brightness=0.1),  # 颜色亮度
+                #transforms.RandomRotation(20),  # 随机旋转角度
+                #transforms.ColorJitter(brightness=0.1),  # 颜色亮度
                 transforms.Resize([224, 224]),  # 设置成224×224大小的张量
                 transforms.ToTensor(),
                 # transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
