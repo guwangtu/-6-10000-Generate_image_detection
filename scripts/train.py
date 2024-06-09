@@ -172,8 +172,7 @@ class Trainer:
             pred_label = max_index.cpu().numpy()
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
-            train_sum += pred_label.shape[0]
-            break
+            train_sum += pred_label.shape[0] 
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
     def evaluate(self, model, val_loader, epoch, adv_test=False, val_loader2=None):
@@ -218,8 +217,7 @@ class Trainer:
                 pred_label = max_index.cpu().numpy()
                 true_label = label.cpu().numpy()
                 corrects += np.sum(pred_label == true_label)
-                test_sum += pred_label.shape[0]
-            break
+                test_sum += pred_label.shape[0] 
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
 
     def set_loggers(self,save_path):
