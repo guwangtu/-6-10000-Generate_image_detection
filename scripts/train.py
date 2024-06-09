@@ -24,11 +24,11 @@ from load_data import load_artifact, load_fold, load_diffusion_forensics, load_G
 
 
 class Trainer:
-    def __init__(self, args, atk, logger=None):
+    def __init__(self, args, atk):
         self.args = args
         self.atk = atk
-        self.logger = logger
         self.device = "cuda:" + args.device
+        self.loggers=[]
 
     def train(
         self,
@@ -54,13 +54,9 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        file_handler = logging.FileHandler(save_path + "/"+args.save_path+".log")  # 指定日志文件路径
-        # 设置日志消息的格式
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        self.logger.addHandler(file_handler)
+        self.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
 
-        logging.info(f"Save in: {save_path}")
+        self.loggers[0].info(f"Save in: {save_path}")
 
         if args.test_first:
             self.evaluate(
@@ -87,7 +83,7 @@ class Trainer:
                 + "  train_acc:"
                 + str(train_acc)
             )
-            logging.info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
+            self.loggers[0].info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
 
             if (epoch + 1) % args.save_each_epoch == 0:
                 self.evaluate(
@@ -110,13 +106,13 @@ class Trainer:
                 )
                 self.atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
                 self.atk.set_device(self.device)
-        self.evaluate(
+        '''self.evaluate(
             model,
             val_loader,
             epoch=args.epoches,
             adv_test=args.adv_test or args.adv,
             val_loader2=val_loader2,
-        )
+        )'''
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
@@ -142,6 +138,8 @@ class Trainer:
 
         if train_loader2:
             dataloader_iterator = iter(train_loader2)
+
+        batch_count = 0
         for i, (image, label) in enumerate(tqdm(train_loader)):
             image = image.to(device)
             label = label.to(device)
@@ -163,41 +161,32 @@ class Trainer:
             if adv_train:
                 adv_image = atk(image, label)
                 target2 = model(adv_image)
-                loss = loss + criterion(target2, label)
-            '''if adv_train:
-                adv_image = atk(image, label)
-                optimizer.zero_grad()
-                target2 = model(adv_image)
-                loss1 = criterion(target2, label)
-                target = model(image)
-                loss2 = criterion(target, label)
-                loss = loss1 + loss2
-            else:
-                optimizer.zero_grad()
-                target = model(image)
-                loss = criterion(target, label)'''
+                loss = loss + criterion(target2, label) 
 
             loss.backward()
             optimizer.step()
+            batch_count += 1
+
             total_loss += loss.item()
             max_value, max_index = torch.max(target, 1)
             pred_label = max_index.cpu().numpy()
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0]
+            break
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
     def evaluate(self, model, val_loader, epoch, adv_test=False, val_loader2=None):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
-        logging.info(f"Epoch{epoch}: Loss:{test_loss} Evaluate accuracy: {test_acc:.4f}")
+        self.loggers[1].info(f"Epoch{epoch}: Loss:{test_loss} Evaluate accuracy: {test_acc:.4f}")
         if adv_test:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader, criterion, adv_test=True
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
-            logging.info(f"Epoch{epoch}: Adv Loss:{test_loss} Adv evaluate accuracy: {test_acc:.4f}")
+            self.loggers[2].info(f"Epoch{epoch}: Adv Loss:{test_loss} Adv evaluate accuracy: {test_acc:.4f}")
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader2, criterion, adv_test=False
@@ -208,7 +197,7 @@ class Trainer:
                 + "  another_val_acc:"
                 + str(test_acc)
             )
-            logging.info(f"Epoch{epoch}: Loss:{test_loss} Another Evaluate accuracy: {test_acc:.4f}")
+            self.loggers[1].info(f"Epoch{epoch}: Loss:{test_loss} Another Evaluate accuracy: {test_acc:.4f}")
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False):
         device = self.device
@@ -230,7 +219,38 @@ class Trainer:
                 true_label = label.cpu().numpy()
                 corrects += np.sum(pred_label == true_label)
                 test_sum += pred_label.shape[0]
+            break
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
+
+    def set_loggers(self,save_path):
+        args = self.args
+        self.loggers=[]
+        if args.todo=="train":
+            train_logger = self.get_logger(save_path,"train")
+            test_logger = self.get_logger(save_path,"test")
+            self.loggers.append(train_logger)
+            self.loggers.append(test_logger)
+            if args.adv:
+                adv_test_logger = self.get_logger(save_path,"adv_test")
+                self.loggers.append(adv_test_logger)
+        
+
+    def get_logger(self,save_path,typestr):
+        # 创建train和test日志记录器
+        this_logger = logging.getLogger(typestr)
+        this_logger.setLevel(logging.INFO)
+
+        this_file_handler = logging.FileHandler(save_path+"_"+typestr+".log")
+        this_file_handler.setLevel(logging.INFO)
+
+        # 创建格式化器
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        this_file_handler.setFormatter(formatter)
+
+        # 将处理器添加到日志记录器
+        this_logger.addHandler(this_file_handler)
+        return this_logger
+     
 
     def get_adv_imgs(self, data_loader):
         device = self.device
@@ -264,10 +284,6 @@ def main(args):
     batch_size = args.batch_size
     device = "cuda:" + str(args.device)
 
-    # 配置日志记录器
-    logging.basicConfig(level=logging.INFO)  # 设置日志级别为INFO或更高级别
-    logger = logging.getLogger()
-
     if args.model == "resnet":
         model = models.resnet50(pretrained=True)
         model.fc = torch.nn.Linear(2048, 2)
@@ -295,7 +311,7 @@ def main(args):
     atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
     atk.set_device(device)
 
-    trainer = Trainer(args, atk, logger)
+    trainer = Trainer(args, atk)
 
     if args.adv:
         print("adv:True")
