@@ -17,10 +17,10 @@ import cv2
 
 from tqdm import tqdm
 
-from argument import parser
+from scripts.argument import parser
 import logging
 
-from load_data import load_artifact, load_fold, load_diffusion_forensics, load_GenImage
+from scripts.load_data import load_artifact, load_fold, load_diffusion_forensics, load_GenImage
 
 
 class Trainer:
@@ -140,7 +140,7 @@ class Trainer:
             dataloader_iterator = iter(train_loader2)
 
         batch_count = 0
-        for i, (image, label) in enumerate(train_loader):
+        for i, (image, label) in enumerate(tqdm(train_loader)):
             image = image.to(device)
             label = label.to(device)
             if train_loader2:
@@ -173,10 +173,6 @@ class Trainer:
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0] 
-            if (i+1) % args.test_each_batch ==0:
-                test_loss, d, test_acc = self.evaluate_step()
-                self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Evaluate accuracy: {test_acc:.4f}")
-                model.train()
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
     def evaluate(self, model, val_loader, epoch, adv_test=False, val_loader2=None):
@@ -368,11 +364,11 @@ def main(args):
         train_loader = data.DataLoader(
             train_data,
             batch_size=batch_size,
-            shuffle=args.shuffle,
+            shuffle=True,
             num_workers=args.num_workers,
         )
         val_loader = data.DataLoader(
-            val_data, batch_size=batch_size, shuffle=args.shuffle, num_workers=args.num_workers
+            val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
         )
 
         if args.train_dataset2:
@@ -382,7 +378,7 @@ def main(args):
             train_loader2 = data.DataLoader(
                 train_data2,
                 batch_size=batch_size,
-                shuffle=args.shuffle,
+                shuffle=True,
                 num_workers=args.num_workers,
             )
         else:
@@ -394,7 +390,7 @@ def main(args):
             val_loader2 = data.DataLoader(
                 val_data2,
                 batch_size=batch_size,
-                shuffle=args.shuffle,
+                shuffle=True,
                 num_workers=args.num_workers,
             )
         else:
@@ -443,6 +439,8 @@ def main(args):
 
 if __name__ == "__main__":
 
-    args = parser()
+    #args = parser()
 
-    main(args)
+    #main(args)
+    from scripts.train_hifi_ifdl import test
+    test()
