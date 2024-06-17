@@ -178,8 +178,12 @@ class Trainer:
             train_sum += pred_label.shape[0] 
             losses.append(loss.item())
             if (i+1) % args.test_each_batch ==0:
-                test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=args.adv)
-                self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Evaluate accuracy: {test_acc:.4f}")
+                this_acc=np.sum(pred_label == true_label)/pred_label.shape[0]
+                test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=False)
+                self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} This acc: {this_acc} Normal Evaluate accuracy: {test_acc:.4f}")
+                if args.adv or args.adv_test:
+                    test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=True)
+                    self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Adv Evaluate accuracy: {test_acc:.4f}")
                 model.train()
         np.save("batch_losses.npy",np.array(losses))
         return total_loss / float(len(train_loader)), train_corrects / train_sum
