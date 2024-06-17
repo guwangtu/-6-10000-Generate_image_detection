@@ -176,7 +176,7 @@ class Trainer:
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0] 
-            losses.append()
+            losses.append(loss.item())
             if (i+1) % args.test_each_batch ==0:
                 test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=args.adv)
                 self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Evaluate accuracy: {test_acc:.4f}")
