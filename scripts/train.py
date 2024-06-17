@@ -181,7 +181,7 @@ class Trainer:
                 test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=args.adv)
                 self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Evaluate accuracy: {test_acc:.4f}")
                 model.train()
-        np.save(np.array(losses),"batch_losses.npy")
+        np.save("batch_losses.npy",np.array(losses))
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
     def evaluate(self, model, val_loader, epoch, adv_test=False, val_loader2=None):
