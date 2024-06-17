@@ -74,6 +74,7 @@ class Trainer:
                 criterion,
                 adv_train=adv_train,
                 train_loader2=train_loader2,
+                val_loader=val_loader
             )
             print(
                 "epoch"
@@ -125,6 +126,7 @@ class Trainer:
         criterion,
         adv_train=False,
         train_loader2=None,
+        val_loader= None,
     ):
         args = self.args
         atk = self.atk
@@ -174,7 +176,7 @@ class Trainer:
             train_corrects += np.sum(pred_label == true_label)
             train_sum += pred_label.shape[0] 
             if (i+1) % args.test_each_batch ==0:
-                test_loss, d, test_acc = self.evaluate_step()
+                test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=args.adv)
                 self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Evaluate accuracy: {test_acc:.4f}")
                 model.train()
         return total_loss / float(len(train_loader)), train_corrects / train_sum
