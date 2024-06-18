@@ -85,7 +85,7 @@ class Trainer:
                 + str(train_acc)
             )
             self.loggers[0].info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
-            np.save(save_path+"/epoch"+epoch+"_batch_losses.npy",np.array(losses))
+            np.save(save_path+"/epoch"+str(epoch)+"_batch_losses.npy",np.array(losses))
 
             if (epoch + 1) % args.save_each_epoch == 0:
                 self.evaluate(
@@ -431,7 +431,7 @@ def main(args):
             os.mkdir("checkpoint")
         if not os.path.isdir(save_path):
             os.mkdir(save_path)
-            
+
         val_path = args.dataset
 
         val_transform = transforms.Compose(
