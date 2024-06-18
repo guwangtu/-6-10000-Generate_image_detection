@@ -67,7 +67,7 @@ class Trainer:
                 val_loader2=val_loader2,
             )
         for epoch in range(args.load_epoch, args.epoches):
-            train_loss, train_acc = self.train_step(
+            train_loss, train_acc, losses = self.train_step(
                 model,
                 train_loader,
                 optimizer,
@@ -85,6 +85,7 @@ class Trainer:
                 + str(train_acc)
             )
             self.loggers[0].info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
+            np.save(save_path+"/epoch"+epoch+"_batch_losses.npy",np.array(losses))
 
             if (epoch + 1) % args.save_each_epoch == 0:
                 self.evaluate(
@@ -185,10 +186,21 @@ class Trainer:
                     test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=True)
                     self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Adv Evaluate accuracy: {test_acc:.4f}")
                 model.train()
-        np.save("batch_losses.npy",np.array(losses))
-        return total_loss / float(len(train_loader)), train_corrects / train_sum
+        #np.save("batch_losses.npy",np.array(losses))
+        return total_loss / float(len(train_loader)), train_corrects / train_sum , losses
 
     def evaluate(self, model, val_loader, epoch = 0, adv_test=False, val_loader2=None):
+
+        save_path = "checkpoint/" + args.save_path
+        int_files = [int(file) for file in os.listdir(save_path)]
+        if len(int_files) == 0:
+            save_path = os.path.join(save_path, "1")
+        else:
+            save_path = os.path.join(save_path, str(max(int_files) + 1))
+
+        os.mkdir(save_path)
+        self.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
+
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
@@ -236,14 +248,14 @@ class Trainer:
     def set_loggers(self,save_path):
         args = self.args
         self.loggers=[]
-        if args.todo=="train":
-            train_logger = self.get_logger(save_path,"train")
-            test_logger = self.get_logger(save_path,"test")
-            self.loggers.append(train_logger)
-            self.loggers.append(test_logger)
-            if args.adv:
-                adv_test_logger = self.get_logger(save_path,"adv_test")
-                self.loggers.append(adv_test_logger)
+         
+        train_logger = self.get_logger(save_path,"train")
+        test_logger = self.get_logger(save_path,"test")
+        self.loggers.append(train_logger)
+        self.loggers.append(test_logger)
+        if args.adv:
+            adv_test_logger = self.get_logger(save_path,"adv_test")
+            self.loggers.append(adv_test_logger)
         
 
     def get_logger(self,save_path,typestr):
