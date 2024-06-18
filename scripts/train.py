@@ -188,7 +188,7 @@ class Trainer:
         np.save("batch_losses.npy",np.array(losses))
         return total_loss / float(len(train_loader)), train_corrects / train_sum
 
-    def evaluate(self, model, val_loader, epoch, adv_test=False, val_loader2=None):
+    def evaluate(self, model, val_loader, epoch = 0, adv_test=False, val_loader2=None):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
