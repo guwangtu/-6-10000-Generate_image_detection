@@ -426,6 +426,12 @@ def main(args):
 
     elif args.todo == "test":
 
+        save_path = "checkpoint/" + args.save_path
+        if not os.path.isdir("checkpoint"):
+            os.mkdir("checkpoint")
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
+            
         val_path = args.dataset
 
         val_transform = transforms.Compose(
