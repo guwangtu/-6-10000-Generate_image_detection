@@ -528,17 +528,6 @@ def main(args):
         )
         my_evaluate(rotate_transform,"Rotate")
 
-        color_transform=transforms.Compose([
-            transforms.ColorJitter(
-                brightness=0.4,
-                contrast=0.4,
-                saturation=0.4,
-                hue=0.1
-            ),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=(224, 224))
-        ])
-        my_evaluate(color_transform,"color_transform")
 
 
     elif args.todo == "get_adv_imgs":
