@@ -482,10 +482,53 @@ def main(args):
         )
         my_evaluate(val_transform,"Normal")
 
+        downsample_128 = transforms.Compose(
+            [
+                transforms.Resize(size=(128, 128)),
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(downsample_128,"downsample_128")
+
+        downsample_64 = transforms.Compose(
+            [
+                transforms.Resize(size=(64, 64)),
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(downsample_64,"downsample_64")
+
+        compression_70 = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.JPEG(quality=70),
+            transforms.Resize([224, 224]),
+            transforms.ToTensor()
+        ])
+        my_evaluate(compression_70,"compression_70")
+
+        compression_35 = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.JPEG(quality=35),
+            transforms.Resize([224, 224]),
+            transforms.ToTensor()
+        ])
+        my_evaluate(compression_70,"compression_70")
+
+        flip_transform = transform.Compose(
+            [
+                transforms.RandomHorizontalFlip(p=1.0),
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(flip_transform,"flip_transform")
+
         crop_transform = transforms.Compose(
             [
                 transforms.RandomResizedCrop(size=(224, 224),
-                                                    scale=(0.8, 1.0),
+                                                    scale=(0.8, 0.85),
                                                     ratio=(3./4., 4./3.)),
                 transforms.ToTensor(),
             ]
@@ -501,26 +544,17 @@ def main(args):
         )
         my_evaluate(rotate_transform,"Rotate")
 
-        blur_transform = transforms.Compose(
-            [
-                transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0)),
-                transforms.Resize([224, 224]),
-                transforms.ToTensor(),
-            ]
-        )
-        my_evaluate(blur_transform,"Blur")
-
-        composite_transform = transforms.Compose(
-            [
-                transforms.RandomRotation(degrees=(-45, 45)),
-                transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0)),
-                transforms.RandomResizedCrop(size=(224, 224),
-                                                    scale=(0.8, 1.0),
-                                                    ratio=(3./4., 4./3.)),
-                transforms.ToTensor(),
-            ]
-        )
-        my_evaluate(composite_transform,"Composite")
+        color_transform=transforms.Compose([
+            transforms.ColorJitter(
+                brightness=0.4,
+                contrast=0.4,
+                saturation=0.4,
+                hue=0.1
+            ),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(size=(224, 224))
+        ])
+        my_evaluate(color_transform,"color_transform")
 
 
     elif args.todo == "get_adv_imgs":
