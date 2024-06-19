@@ -499,23 +499,7 @@ def main(args):
             ]
         )
         my_evaluate(downsample_64,"downsample_64")
-
-        compression_70 = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.JPEG(quality=70),
-            transforms.Resize([224, 224]),
-            transforms.ToTensor()
-        ])
-        my_evaluate(compression_70,"compression_70")
-
-        compression_35 = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.JPEG(quality=35),
-            transforms.Resize([224, 224]),
-            transforms.ToTensor()
-        ])
-        my_evaluate(compression_70,"compression_70")
-
+ 
         flip_transform = transform.Compose(
             [
                 transforms.RandomHorizontalFlip(p=1.0),
