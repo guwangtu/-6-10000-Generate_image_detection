@@ -447,6 +447,81 @@ def main(args):
         )
 
         trainer.evaluate(model, val_loader, adv_test=args.adv)
+    elif args.todo == "degrade":
+
+        save_path = "checkpoint/" + args.save_path
+        if not os.path.isdir("checkpoint"):
+            os.mkdir("checkpoint")
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
+
+        int_files = [int(file) for file in os.listdir(save_path)]
+        if len(int_files) == 0:
+            save_path = os.path.join(save_path, "1")
+        else:
+            save_path = os.path.join(save_path, str(max(int_files) + 1))
+
+        os.mkdir(save_path)
+        trainer.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
+
+        val_path = args.dataset
+
+        def my_evaluate(this_transform,namestr):
+            val_data = datasets.ImageFolder(val_path, transform=this_transform)
+            val_loader = data.DataLoader(
+                val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+            )
+            print(namestr+" evaluate")
+            trainer.evaluate(model, val_loader, adv_test=args.adv)
+        
+        val_transform = transforms.Compose(
+            [
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(val_transform,"Normal")
+
+        crop_transform = transforms.Compose(
+            [
+                transforms.RandomResizedCrop(size=(224, 224),
+                                                    scale=(0.8, 1.0),
+                                                    ratio=(3./4., 4./3.)),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(crop_transform,"Crop")
+
+        rotate_transform = transforms.Compose(
+            [
+                transforms.RandomRotation(degrees=(-45, 45)),
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(rotate_transform,"Rotate")
+
+        blur_transform = transforms.Compose(
+            [
+                transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0)),
+                transforms.Resize([224, 224]),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(blur_transform,"Blur")
+
+        composite_transform = transforms.Compose(
+            [
+                transforms.RandomRotation(degrees=(-45, 45)),
+                transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0)),
+                transforms.RandomResizedCrop(size=(224, 224),
+                                                    scale=(0.8, 1.0),
+                                                    ratio=(3./4., 4./3.)),
+                transforms.ToTensor(),
+            ]
+        )
+        my_evaluate(composite_transform,"Composite")
+
 
     elif args.todo == "get_adv_imgs":
 

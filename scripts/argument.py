@@ -18,9 +18,9 @@ def parser():
 
     parser.add_argument(
         "--todo",
-        choices=["train", "test", "get_adv_imgs"],
+        choices=["train", "test","degrade" "get_adv_imgs"],
         default="train",
-        help="train|test|get_adv_imgs",
+        help="train|test|degrade|get_adv_imgs",
     )
     parser.add_argument("--device", default="0", type=str, help="0123")
 
