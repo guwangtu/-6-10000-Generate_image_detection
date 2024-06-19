@@ -40,7 +40,7 @@ def parser():
     parser.add_argument("--load_path", default=None)
     parser.add_argument("--load_epoch", type=int, default=0)
     parser.add_argument("--sgd", default=False, action="store_true")
-    parser.add_argument("--test_each_batch", type=int, default=100)
+    parser.add_argument("--test_each_batch", type=int, default=0)
 
     parser.add_argument("--adv", default=False, action="store_true")
     parser.add_argument("--atk_eps", type=str_to_float, default=8 / 255)
