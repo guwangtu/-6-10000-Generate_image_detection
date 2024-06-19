@@ -40,7 +40,7 @@ for subfolder in os.listdir(src_dir):
 
             image_pil = img
             image_pil.save(
-                output_dir + "/" + subfolder, name + ".jpg", optimize=True, quality=70
+                save_path+ name + ".jpg", optimize=True, quality=70
             )
 
 
@@ -56,5 +56,5 @@ for subfolder in os.listdir(src_dir):
 
             image_pil = img
             image_pil.save(
-                output_dir + "/" + subfolder, name + ".jpg", optimize=True, quality=35
+                save_path+name + ".jpg", optimize=True, quality=35
             )
