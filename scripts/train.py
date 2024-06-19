@@ -191,17 +191,6 @@ class Trainer:
         return total_loss / float(len(train_loader)), train_corrects / train_sum , losses
 
     def evaluate(self, model, val_loader, epoch = 0, adv_test=False, val_loader2=None):
-
-        save_path = "checkpoint/" + args.save_path
-        int_files = [int(file) for file in os.listdir(save_path)]
-        if len(int_files) == 0:
-            save_path = os.path.join(save_path, "1")
-        else:
-            save_path = os.path.join(save_path, str(max(int_files) + 1))
-
-        os.mkdir(save_path)
-        self.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
-
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
@@ -347,6 +336,7 @@ def main(args):
         dataset_path = args.dataset
         train_path = dataset_path + "/train"
         val_path = dataset_path + "/test"
+
         save_path = "checkpoint/" + args.save_path
         if not os.path.isdir("checkpoint"):
             os.mkdir("checkpoint")
@@ -432,6 +422,15 @@ def main(args):
             os.mkdir("checkpoint")
         if not os.path.isdir(save_path):
             os.mkdir(save_path)
+
+        int_files = [int(file) for file in os.listdir(save_path)]
+        if len(int_files) == 0:
+            save_path = os.path.join(save_path, "1")
+        else:
+            save_path = os.path.join(save_path, str(max(int_files) + 1))
+
+        os.mkdir(save_path)
+        trainer.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
 
         val_path = args.dataset
 
