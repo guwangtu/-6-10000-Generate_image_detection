@@ -28,7 +28,7 @@ class Trainer:
         self.args = args
         self.atk = atk
         self.device = "cuda:" + args.device
-        self.loggers=[]
+        self.loggers = []
 
     def train(
         self,
@@ -54,7 +54,9 @@ class Trainer:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        self.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
+        self.set_loggers(
+            save_path + "/" + args.save_path
+        )  # 例：...savepath/2/savepath          顺序train,test,advtest
 
         self.loggers[0].info(f"Save in: {save_path}")
 
@@ -74,7 +76,7 @@ class Trainer:
                 criterion,
                 adv_train=adv_train,
                 train_loader2=train_loader2,
-                val_loader=val_loader
+                val_loader=val_loader,
             )
             print(
                 "epoch"
@@ -85,7 +87,10 @@ class Trainer:
                 + str(train_acc)
             )
             self.loggers[0].info(f"Epoch{epoch}: Training accuracy: {train_acc:.4f}")
-            np.save(save_path+"/epoch"+str(epoch)+"_batch_losses.npy",np.array(losses))
+            np.save(
+                save_path + "/epoch" + str(epoch) + "_batch_losses.npy",
+                np.array(losses),
+            )
 
             if (epoch + 1) % args.save_each_epoch == 0:
                 self.evaluate(
@@ -108,13 +113,13 @@ class Trainer:
                 )
                 self.atk.set_normalization_used(mean=[0, 0, 0], std=[1, 1, 1])
                 self.atk.set_device(self.device)
-        '''self.evaluate(
+        """self.evaluate(
             model,
             val_loader,
             epoch=args.epoches,
             adv_test=args.adv_test or args.adv,
             val_loader2=val_loader2,
-        )'''
+        )"""
         torch.save(
             model.state_dict(), save_path + "/final_epoch" + str(args.epoches) + ".pt"
         )
@@ -127,7 +132,7 @@ class Trainer:
         criterion,
         adv_train=False,
         train_loader2=None,
-        val_loader= None,
+        val_loader=None,
     ):
         args = self.args
         atk = self.atk
@@ -143,7 +148,7 @@ class Trainer:
             dataloader_iterator = iter(train_loader2)
 
         batch_count = 0
-        losses=[]
+        losses = []
         for i, (image, label) in enumerate(train_loader):
             image = image.to(device)
             label = label.to(device)
@@ -165,7 +170,7 @@ class Trainer:
             if adv_train:
                 adv_image = atk(image, label)
                 target2 = model(adv_image)
-                loss = loss + criterion(target2, label) 
+                loss = loss + criterion(target2, label)
 
             loss.backward()
             optimizer.step()
@@ -176,31 +181,43 @@ class Trainer:
             pred_label = max_index.cpu().numpy()
             true_label = label.cpu().numpy()
             train_corrects += np.sum(pred_label == true_label)
-            train_sum += pred_label.shape[0] 
+            train_sum += pred_label.shape[0]
             losses.append(loss.item())
             if not args.test_each_batch == 0:
-                if (i+1) % args.test_each_batch ==0:
-                    this_acc=np.sum(pred_label == true_label)/pred_label.shape[0]
-                    test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=False)
-                    self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} This acc: {this_acc} Normal Evaluate accuracy: {test_acc:.4f}")
+                if (i + 1) % args.test_each_batch == 0:
+                    this_acc = np.sum(pred_label == true_label) / pred_label.shape[0]
+                    test_loss, d, test_acc = self.evaluate_step(
+                        model, val_loader, criterion, adv_test=False
+                    )
+                    self.loggers[0].info(
+                        f"               Batch_id:{i} Batch Loss:{loss.item()} This acc: {this_acc} Normal Evaluate accuracy: {test_acc:.4f}"
+                    )
                     if args.adv or args.adv_test:
-                        test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion, adv_test=True)
-                        self.loggers[0].info(f"               Batch_id:{i} Batch Loss:{loss.item()} Adv Evaluate accuracy: {test_acc:.4f}")
+                        test_loss, d, test_acc = self.evaluate_step(
+                            model, val_loader, criterion, adv_test=True
+                        )
+                        self.loggers[0].info(
+                            f"               Batch_id:{i} Batch Loss:{loss.item()} Adv Evaluate accuracy: {test_acc:.4f}"
+                        )
                     model.train()
-            #np.save("batch_losses.npy",np.array(losses))
-        return total_loss / float(len(train_loader)), train_corrects / train_sum , losses
+            # np.save("batch_losses.npy",np.array(losses))
+        return total_loss / float(len(train_loader)), train_corrects / train_sum, losses
 
-    def evaluate(self, model, val_loader, epoch = 0, adv_test=False, val_loader2=None):
+    def evaluate(self, model, val_loader, epoch=0, adv_test=False, val_loader2=None):
         criterion = torch.nn.CrossEntropyLoss()
         test_loss, d, test_acc = self.evaluate_step(model, val_loader, criterion)
         print("val_loss:" + str(test_loss) + "  val_acc:" + str(test_acc))
-        self.loggers[1].info(f"Epoch{epoch}: Loss:{test_loss} Evaluate accuracy: {test_acc:.4f}")
+        self.loggers[1].info(
+            f"Epoch{epoch}: Loss:{test_loss} Evaluate accuracy: {test_acc:.4f}"
+        )
         if adv_test:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader, criterion, adv_test=True
             )
             print("adv_val_loss:" + str(test_loss) + "  adv_val_acc:" + str(test_acc))
-            self.loggers[2].info(f"Epoch{epoch}: Adv Loss:{test_loss} Adv evaluate accuracy: {test_acc:.4f}")
+            self.loggers[2].info(
+                f"Epoch{epoch}: Adv Loss:{test_loss} Adv evaluate accuracy: {test_acc:.4f}"
+            )
         if val_loader2:
             test_loss, d, test_acc = self.evaluate_step(
                 model, val_loader2, criterion, adv_test=False
@@ -211,7 +228,9 @@ class Trainer:
                 + "  another_val_acc:"
                 + str(test_acc)
             )
-            self.loggers[1].info(f"Epoch{epoch}: Loss:{test_loss} Another Evaluate accuracy: {test_acc:.4f}")
+            self.loggers[1].info(
+                f"Epoch{epoch}: Loss:{test_loss} Another Evaluate accuracy: {test_acc:.4f}"
+            )
 
     def evaluate_step(self, model, val_loader, criterion, adv_test=False):
         device = self.device
@@ -232,38 +251,38 @@ class Trainer:
                 pred_label = max_index.cpu().numpy()
                 true_label = label.cpu().numpy()
                 corrects += np.sum(pred_label == true_label)
-                test_sum += pred_label.shape[0] 
+                test_sum += pred_label.shape[0]
         return eval_loss / float(len(val_loader)), corrects, corrects / test_sum
 
-    def set_loggers(self,save_path):
+    def set_loggers(self, save_path):
         args = self.args
-        self.loggers=[]
-         
-        train_logger = self.get_logger(save_path,"train")
-        test_logger = self.get_logger(save_path,"test")
+        self.loggers = []
+
+        train_logger = self.get_logger(save_path, "train")
+        test_logger = self.get_logger(save_path, "test")
         self.loggers.append(train_logger)
         self.loggers.append(test_logger)
         if args.adv:
-            adv_test_logger = self.get_logger(save_path,"adv_test")
+            adv_test_logger = self.get_logger(save_path, "adv_test")
             self.loggers.append(adv_test_logger)
-        
 
-    def get_logger(self,save_path,typestr):
+    def get_logger(self, save_path, typestr):
         # 创建train和test日志记录器
         this_logger = logging.getLogger(typestr)
         this_logger.setLevel(logging.INFO)
 
-        this_file_handler = logging.FileHandler(save_path+"_"+typestr+".log")
+        this_file_handler = logging.FileHandler(save_path + "_" + typestr + ".log")
         this_file_handler.setLevel(logging.INFO)
 
         # 创建格式化器
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         this_file_handler.setFormatter(formatter)
 
         # 将处理器添加到日志记录器
         this_logger.addHandler(this_file_handler)
         return this_logger
-     
 
     def get_adv_imgs(self, data_loader):
         device = self.device
@@ -345,8 +364,8 @@ def main(args):
 
         train_transform = transforms.Compose(
             [
-                #transforms.RandomRotation(20),  # 随机旋转角度
-                #transforms.ColorJitter(brightness=0.1),  # 颜色亮度
+                # transforms.RandomRotation(20),  # 随机旋转角度
+                # transforms.ColorJitter(brightness=0.1),  # 颜色亮度
                 transforms.Resize([224, 224]),  # 设置成224×224大小的张量
                 transforms.ToTensor(),
                 # transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
@@ -384,7 +403,10 @@ def main(args):
             num_workers=args.num_workers,
         )
         val_loader = data.DataLoader(
-            val_data, batch_size=batch_size, shuffle=args.shuffle, num_workers=args.num_workers
+            val_data,
+            batch_size=batch_size,
+            shuffle=args.shuffle,
+            num_workers=args.num_workers,
         )
 
         if args.train_dataset2:
@@ -430,7 +452,9 @@ def main(args):
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        trainer.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
+        trainer.set_loggers(
+            save_path + "/" + args.save_path
+        )  # 例：...savepath/2/savepath          顺序train,test,advtest
 
         val_path = args.dataset
 
@@ -462,25 +486,30 @@ def main(args):
             save_path = os.path.join(save_path, str(max(int_files) + 1))
 
         os.mkdir(save_path)
-        trainer.set_loggers(save_path+"/"+args.save_path)   #例：...savepath/2/savepath          顺序train,test,advtest
+        trainer.set_loggers(
+            save_path + "/" + args.save_path
+        )  # 例：...savepath/2/savepath          顺序train,test,advtest
 
         val_path = args.dataset
 
-        def my_evaluate(this_transform,namestr):
+        def my_evaluate(this_transform, namestr):
             val_data = datasets.ImageFolder(val_path, transform=this_transform)
             val_loader = data.DataLoader(
-                val_data, batch_size=batch_size, shuffle=True, num_workers=args.num_workers
+                val_data,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=args.num_workers,
             )
-            print(namestr+" evaluate")
+            print(namestr + " evaluate")
             trainer.evaluate(model, val_loader, adv_test=args.adv)
-        
+
         val_transform = transforms.Compose(
             [
                 transforms.Resize([224, 224]),
                 transforms.ToTensor(),
             ]
         )
-        my_evaluate(val_transform,"Normal")
+        my_evaluate(val_transform, "Normal")
 
         downsample_128 = transforms.Compose(
             [
@@ -489,7 +518,7 @@ def main(args):
                 transforms.ToTensor(),
             ]
         )
-        my_evaluate(downsample_128,"downsample_128")
+        my_evaluate(downsample_128, "downsample_128")
 
         downsample_64 = transforms.Compose(
             [
@@ -498,8 +527,8 @@ def main(args):
                 transforms.ToTensor(),
             ]
         )
-        my_evaluate(downsample_64,"downsample_64")
- 
+        my_evaluate(downsample_64, "downsample_64")
+
         flip_transform = transforms.Compose(
             [
                 transforms.RandomHorizontalFlip(p=1.0),
@@ -507,17 +536,17 @@ def main(args):
                 transforms.ToTensor(),
             ]
         )
-        my_evaluate(flip_transform,"flip_transform")
+        my_evaluate(flip_transform, "flip_transform")
 
         crop_transform = transforms.Compose(
             [
-                transforms.RandomResizedCrop(size=(224, 224),
-                                                    scale=(0.8, 0.85),
-                                                    ratio=(3./4., 4./3.)),
+                transforms.RandomResizedCrop(
+                    size=(224, 224), scale=(0.8, 0.85), ratio=(3.0 / 4.0, 4.0 / 3.0)
+                ),
                 transforms.ToTensor(),
             ]
         )
-        my_evaluate(crop_transform,"Crop")
+        my_evaluate(crop_transform, "Crop")
 
         rotate_transform = transforms.Compose(
             [
@@ -526,9 +555,7 @@ def main(args):
                 transforms.ToTensor(),
             ]
         )
-        my_evaluate(rotate_transform,"Rotate")
-
-
+        my_evaluate(rotate_transform, "Rotate")
 
     elif args.todo == "get_adv_imgs":
 

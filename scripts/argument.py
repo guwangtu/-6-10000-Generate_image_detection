@@ -18,7 +18,7 @@ def parser():
 
     parser.add_argument(
         "--todo",
-        choices=["train", "test","degrade", "get_adv_imgs"],
+        choices=["train", "test", "degrade", "get_adv_imgs"],
         default="train",
         help="train|test|degrade|get_adv_imgs",
     )
@@ -54,6 +54,6 @@ def parser():
     parser.add_argument("--genimage", default=False, action="store_true")
     parser.add_argument("--imagenet", default=None)
 
-    #parser.add_argument("--log_path", default="log/training.log") #改成自动的了
+    # parser.add_argument("--log_path", default="log/training.log") #改成自动的了
 
     return parser.parse_args()
