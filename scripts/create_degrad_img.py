@@ -38,7 +38,7 @@ for subfolder in os.listdir(src_dir):
             name, ext = os.path.splitext(file)
             save_path = os.path.join(output_dir + "/" + subfolder, name + ".jpg")
 
-            image_pil = transforms.ToPILImage()(img)
+            image_pil = img
             image_pil.save(
                 output_dir + "/" + subfolder, name + ".jpg", optimize=True, quality=70
             )
@@ -54,7 +54,7 @@ for subfolder in os.listdir(src_dir):
             name, ext = os.path.splitext(file)
             save_path = os.path.join(output_dir + "/" + subfolder, name + ".jpg")
 
-            image_pil = transforms.ToPILImage()(img)
+            image_pil = img
             image_pil.save(
                 output_dir + "/" + subfolder, name + ".jpg", optimize=True, quality=35
             )
