@@ -500,7 +500,7 @@ def main(args):
         )
         my_evaluate(downsample_64,"downsample_64")
  
-        flip_transform = transform.Compose(
+        flip_transform = transforms.Compose(
             [
                 transforms.RandomHorizontalFlip(p=1.0),
                 transforms.Resize([224, 224]),
