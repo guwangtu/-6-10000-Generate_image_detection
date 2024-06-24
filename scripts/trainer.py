@@ -17,10 +17,10 @@ import cv2
 
 from tqdm import tqdm
 
-from argument import parser
+from scripts.argument import parser
 import logging
 
-from load_data import load_artifact, load_fold, load_diffusion_forensics, load_GenImage
+from scripts.load_data import load_artifact, load_fold, load_diffusion_forensics, load_GenImage
 
 
 class Trainer:
