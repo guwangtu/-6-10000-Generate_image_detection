@@ -72,12 +72,6 @@ def main(args):
     if args.todo == "train":
 
         dataset_path = args.dataset
-        save_path = "checkpoint/" + args.save_path
-
-        if not os.path.isdir("checkpoint"):
-            os.mkdir("checkpoint")
-        if not os.path.isdir(save_path):
-            os.mkdir(save_path)
 
         train_transform = transforms.Compose(
             [

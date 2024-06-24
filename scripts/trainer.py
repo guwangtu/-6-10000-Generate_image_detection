@@ -36,6 +36,10 @@ class Trainer:
         self.epoch = args.load_epoch
 
         save_path = "checkpoint/" + args.save_path
+        if not os.path.isdir("checkpoint"):
+            os.mkdir("checkpoint")
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
         int_files = [int(file) for file in os.listdir(save_path)]
         if len(int_files) == 0:
             save_path = os.path.join(save_path, "1")
