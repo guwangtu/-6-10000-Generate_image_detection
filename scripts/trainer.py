@@ -76,7 +76,6 @@ class Trainer:
         if args.test_first:
             self.evaluate(
                 model,
-                epoch=0,
                 adv_test=args.adv or args.adv_test,
             )
         for epoch in range(args.load_epoch, args.epoches):

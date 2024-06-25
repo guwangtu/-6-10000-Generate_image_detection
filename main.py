@@ -157,23 +157,7 @@ def main(args):
 
     elif args.todo == "test":
 
-        save_path = "checkpoint/" + args.save_path
-        if not os.path.isdir("checkpoint"):
-            os.mkdir("checkpoint")
-        if not os.path.isdir(save_path):
-            os.mkdir(save_path)
-
-        int_files = [int(file) for file in os.listdir(save_path)]
-        if len(int_files) == 0:
-            save_path = os.path.join(save_path, "1")
-        else:
-            save_path = os.path.join(save_path, str(max(int_files) + 1))
-
-        os.mkdir(save_path)
-        trainer.set_loggers(
-            save_path + "/" + args.save_path
-        )  # 例：...savepath/2/savepath          顺序train,test,advtest
-
+       
         val_path = args.dataset
 
         val_transform = transforms.Compose(
