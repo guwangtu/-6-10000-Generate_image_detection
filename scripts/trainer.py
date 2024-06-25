@@ -46,6 +46,8 @@ class Trainer:
         else:
             save_path = os.path.join(save_path, str(max(int_files) + 1))
         self.save_path = save_path  # 例：checkpoint/face_normal/3
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
 
     def set_dataloader(
         self, train_loader=None, train_loader2=None, val_loader=None, val_loader2=None
