@@ -106,6 +106,8 @@ def main(args):
             train_data, val_data = load_fold(
                 dataset_path, train_transform, val_transform
             )
+        from scripts.load_data import spilt_dataset
+        train_data, val_data=spilt_dataset(train_data)
 
         train_loader = data.DataLoader(
             train_data,
