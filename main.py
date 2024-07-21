@@ -106,19 +106,21 @@ def main(args):
             train_data, val_data = load_fold(
                 dataset_path, train_transform, val_transform
             )
-        #from scripts.load_data import spilt_dataset
-        #train_data, val_data=spilt_dataset(train_data)
+        '''from torch.utils.data import Dataset, DataLoader, random_split, ConcatDataset
+        train_data=ConcatDataset([train_data,val_data])
+        from scripts.load_data import spilt_dataset
+        train_data, val_data=spilt_dataset(train_data)'''
 
         train_loader = data.DataLoader(
             train_data,
             batch_size=args.batch_size,
-            shuffle=args.shuffle,
+            shuffle=not args.not_shuffle,
             num_workers=args.num_workers,
         )
         val_loader = data.DataLoader(
             val_data,
             batch_size=args.batch_size,
-            shuffle=args.shuffle,
+            shuffle=not args.not_shuffle,
             num_workers=args.num_workers,
         )
 
@@ -129,7 +131,7 @@ def main(args):
             train_loader2 = data.DataLoader(
                 train_data2,
                 batch_size=args.batch_size,
-                shuffle=args.shuffle,
+                shuffle=not args.not_shuffle,
                 num_workers=args.num_workers,
             )
         else:
@@ -141,7 +143,7 @@ def main(args):
             val_loader2 = data.DataLoader(
                 val_data2,
                 batch_size=args.batch_size,
-                shuffle=args.shuffle,
+                shuffle=not args.not_shuffle,
                 num_workers=args.num_workers,
             )
         else:
@@ -167,7 +169,7 @@ def main(args):
             ]
         )
 
-        val_data = datasets.ImageFolder(val_path, transform=val_transform)
+        val_data =  load_single_dataset(val_path, transform=val_transform)
         val_loader = data.DataLoader(
             val_data,
             batch_size=args.batch_size,
@@ -181,7 +183,7 @@ def main(args):
             val_loader2 = data.DataLoader(
                 val_data2,
                 batch_size=args.batch_size,
-                shuffle=args.shuffle,
+                shuffle=not args.not_shuffle,
                 num_workers=args.num_workers,
             )
         else:
@@ -286,16 +288,15 @@ def main(args):
                 transforms.ToTensor(),
             ]
         )
-        imgdata = datasets.ImageFolder(dataset_path, transform=transform)
+        imgdata = load_single_dataset(dataset_path, transform=transform)
         data_loader = data.DataLoader(
             imgdata,
             batch_size=args.batch_size,
             shuffle=True,
             num_workers=args.num_workers,
         )
-
-        trainer.get_adv_imgs(data_loader)
-
+        
+        trainer.save_adv_imgs(data_loader,args.diff_denoise) 
 
 if __name__ == "__main__":
 
